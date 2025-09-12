@@ -2,25 +2,56 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
-// Logo Component - Bigger and Professional
-const Logo = ({ className = "", isScrolled = false }) => (
-  <div className={`flex items-center transition-all duration-500 ${className}`}>
-    <div className={`flex items-center transition-all duration-500 ${
-      isScrolled 
-        ? 'h-12 w-auto md:h-14 lg:h-16' 
-        : 'h-14 w-auto md:h-16 lg:h-18'
-    }`}>
-      <span className={`font-bold tracking-wide transition-all duration-500 ${
+// Logo Component - Sadece logo eklendi
+const Logo = ({ className = "", isScrolled = false }) => {
+  const [imageError, setImageError] = useState(false);
+
+  if (imageError) {
+    return (
+      <div className={`flex items-center transition-all duration-500 ${className}`}>
+        <div className={`flex items-center transition-all duration-500 ${
+          isScrolled 
+            ? 'h-12 w-auto md:h-14 lg:h-16' 
+            : 'h-14 w-auto md:h-16 lg:h-18'
+        }`}>
+          <span className={`font-bold tracking-wide transition-all duration-500 ${
+            isScrolled 
+              ? 'text-lg md:text-xl text-gray-800' 
+              : 'text-xl md:text-2xl lg:text-3xl text-gray-800'
+          }`}>
+            LOGO
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`flex items-center transition-all duration-500 ${className}`}>
+      <div className={`flex items-center transition-all duration-500 ${
         isScrolled 
-          ? 'text-lg md:text-xl text-gray-800' 
-          : 'text-xl md:text-2xl lg:text-3xl text-gray-800'
+          ? 'h-12 w-auto md:h-14 lg:h-16' 
+          : 'h-14 w-auto md:h-16 lg:h-18'
       }`}>
-        LOGO
-      </span>
+        <Image
+          src="/images/logo.png"
+          alt="Yılmaz Çolak Hukuk Bürosu"
+          width={200}
+          height={80}
+          className={`transition-all duration-500 object-contain ${
+            isScrolled 
+              ? 'h-12 w-auto md:h-14 lg:h-16' 
+              : 'h-14 w-auto md:h-16 lg:h-18'
+          }`}
+          onError={() => setImageError(true)}
+          priority
+        />
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // Practice Areas Data - Simple Structure
 const practiceAreasData = [
@@ -275,7 +306,7 @@ const Header = () => {
   const headerRef = useRef(null);
   const dropdownTimeoutRef = useRef(null);
 
-  // Optimized scroll handler
+  // Scroll handler - temizlendi
   const handleScroll = useCallback(() => {
     const scrollTop = window.scrollY;
     const newIsScrolled = scrollTop > 20;
@@ -467,12 +498,7 @@ const Header = () => {
         practiceAreas={practiceAreasData}
       />
 
-      {/* Header Spacer */}
-      <div className={`transition-all duration-500 ${
-        isScrolled 
-          ? 'h-20 md:h-22 lg:h-24' 
-          : 'h-24 md:h-26 lg:h-28'
-      }`} />
+      {/* Header Spacer - kaldırıldı çünkü artık header relative */}
     </>
   );
 };

@@ -13,20 +13,31 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: "Yılmaz Çolak Hukuk Bürosu | Profesyonel Hukuki Danışmanlık",
-  description: "Avukat Yılmaz Çolak Hukuk Bürosu - Profesyonel hukuki danışmanlık, sözleşme hazırlama ve mahkeme temsili hizmetleri. Adalet ve güvenin adresi.",
-  keywords: "avukat, hukuk bürosu, hukuki danışmanlık, sözleşme, mahkeme, Yılmaz Çolak, Karabük avukat, hukuk, adalet",
+  description:
+    "Avukat Yılmaz Çolak Hukuk Bürosu - Profesyonel hukuki danışmanlık, sözleşme hazırlama ve mahkeme temsili hizmetleri. Adalet ve güvenin adresi.",
+  keywords:
+    "avukat, hukuk bürosu, hukuki danışmanlık, sözleşme, mahkeme, Yılmaz Çolak, Karabük avukat, hukuk, adalet",
   authors: [{ name: "Arda Çalışkan" }],
   creator: "Arda Çalışkan",
   publisher: "Yılmaz Çolak Hukuk Bürosu",
   robots: "index, follow",
-  
+
+  // Favicon ve Manifest
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon-32x32.png",
+    apple: "/apple-touch-icon.png",
+  },
+  manifest: "/site.webmanifest",
+
   // Open Graph / Facebook
   openGraph: {
     type: "website",
     locale: "tr_TR",
     url: "https://yusufcolak.av.tr",
     title: "Yılmaz Çolak Hukuk Bürosu | Profesyonel Hukuki Danışmanlık",
-    description: "Avukat Yılmaz Çolak Hukuk Bürosu - Profesyonel hukuki danışmanlık, sözleşme hazırlama ve mahkeme temsili hizmetleri.",
+    description:
+      "Avukat Yılmaz Çolak Hukuk Bürosu - Profesyonel hukuki danışmanlık, sözleşme hazırlama ve mahkeme temsili hizmetleri.",
     siteName: "Yılmaz Çolak Hukuk Bürosu",
     images: [
       {
@@ -46,7 +57,7 @@ export const metadata = {
     images: ["/og-image.jpg"],
   },
 
-  // Additional meta tags
+  // Ekstra meta tagler
   other: {
     "theme-color": "#f59e0b",
     "msapplication-TileColor": "#1e293b",
@@ -57,14 +68,6 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="tr">
-      <head>
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-        <link rel="manifest" href="/site.webmanifest" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

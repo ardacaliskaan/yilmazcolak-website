@@ -2,12 +2,26 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
-// Logo Component for Footer
+// Logo Component for Footer - Updated with logo.png
 const FooterLogo = ({ className = "" }) => (
   <div className={`flex items-center ${className}`}>
-    <span className="text-2xl font-bold tracking-wide text-gray-800">
-      LOGO
+    <Image 
+      src="/images/logo.png" 
+      alt="Yılmaz Çolak Hukuk Bürosu" 
+      className="h-16 w-auto object-contain"
+      onError={(e) => {
+        // Fallback text if image fails to load
+        e.target.style.display = 'none';
+        e.target.nextElementSibling.style.display = 'block';
+      }}
+    />
+    <span 
+      className="text-2xl font-bold tracking-wide text-gray-800"
+      style={{ display: 'none' }}
+    >
+      YILMAZ ÇOLAK HUKUK BÜROSU
     </span>
   </div>
 );
@@ -70,98 +84,91 @@ const corporateLinksData = [
     id: 1,
     name: "Hakkımızda",
     slug: "hakkimizda",
-    href: "/hakkimizda",
-    description: "Büromuz ve misyonumuz hakkında bilgi",
-    order: 1
+    href: "/hakkimizda"
   },
   {
     id: 2,
-    name: "Kariyer",
-    slug: "kariyer", 
-    href: "/kariyer",
-    description: "İş fırsatları ve başvuru formu",
-    order: 2
+    name: "Ekibimiz",
+    slug: "ekibimiz",
+    href: "/ekibimiz"
   },
   {
     id: 3,
-    name: "KVKK",
-    slug: "kvkk",
-    href: "/kvkk",
-    description: "Kişisel verilerin korunması politikası",
-    order: 3
+    name: "Referanslar",
+    slug: "referanslar",
+    href: "/referanslar"
   },
   {
     id: 4,
-    name: "Gizlilik Politikası",
-    slug: "gizlilik-politikasi",
-    href: "/gizlilik-politikasi", 
-    description: "Web sitesi gizlilik politikası",
-    order: 4
+    name: "Başarı Hikayeleri",
+    slug: "basari-hikayeleri",
+    href: "/basari-hikayeleri"
   },
   {
     id: 5,
-    name: "Kullanım Koşulları",
-    slug: "kullanim-kosullari",
-    href: "/kullanim-kosullari",
-    description: "Web sitesi kullanım şartları",
-    order: 5
+    name: "Sık Sorulan Sorular",
+    slug: "sss",
+    href: "/sss"
+  },
+  {
+    id: 6,
+    name: "Kariyer",
+    slug: "kariyer",
+    href: "/kariyer"
   }
 ];
 
-// Services Links Data Structure  
+// Services Links Data Structure
 const servicesLinksData = [
   {
     id: 1,
-    name: "Çalışma Alanları",
-    slug: "calisma-alanlari",
-    href: "/calisma-alanlari",
-    description: "Tüm hukuki hizmet alanlarımız",
-    order: 1
+    name: "Online Danışmanlık",
+    slug: "online-danismanlik",
+    href: "/online-danismanlik"
   },
   {
     id: 2,
-    name: "Online Danışmanlık", 
-    slug: "online-danismanlik",
-    href: "/online-danismanlik",
-    description: "Uzaktan hukuki danışmanlık hizmeti",
-    order: 2
+    name: "Randevu Al",
+    slug: "randevu-al",
+    href: "/randevu-al"
   },
   {
     id: 3,
-    name: "Sık Sorulan Sorular",
-    slug: "sss",
-    href: "/sss", 
-    description: "En çok merak edilen hukuki sorular",
-    order: 3
+    name: "Sözleşme İnceleme",
+    slug: "sozlesme-inceleme",
+    href: "/hizmetler/sozlesme-inceleme"
   },
   {
     id: 4,
-    name: "Hukuki Makaleler",
-    slug: "makaleler",
-    href: "/makaleler",
-    description: "Güncel hukuki yazılar ve analizler",
-    order: 4
+    name: "Mahkeme Temsili",
+    slug: "mahkeme-temsili",
+    href: "/hizmetler/mahkeme-temsili"
   },
   {
     id: 5,
-    name: "Hukuki Formlar",
-    slug: "hukuki-formlar", 
-    href: "/hukuki-formlar",
-    description: "İndirilebilir hukuki form örnekleri",
-    order: 5
+    name: "Arabuluculuk",
+    slug: "arabuluculuk",
+    href: "/hizmetler/arabuluculuk"
+  },
+  {
+    id: 6,
+    name: "Dava Takibi",
+    slug: "dava-takibi",
+    href: "/hizmetler/dava-takibi"
   }
 ];
 
 // Contact Information Data Structure
 const contactInfoData = {
-  address: {
-    street: "Atatürk Mahallesi, Cumhuriyet Caddesi",
-    building: "Hukuk Plaza, Kat: 5, No: 23",
-    district: "Merkez",
-    city: "Karabük",
-    postalCode: "78050",
-    full: "Atatürk Mahallesi, Cumhuriyet Caddesi, Hukuk Plaza, Kat: 5, No: 23, Merkez/Karabük 78050"
-  },
+ address: {
+  street: "Kemal Güneş Cd.",
+  building: "Akbank Binası, Bayır, No:145, Kat:4",
+  district: "Merkez",
+  city: "Karabük",
+  postalCode: "78050",
+  full: "Akbank Binası, Bayır, Kemal Güneş Cd. No:145 Kat:4, 78050 Karabük Merkez/Karabük"
+},
+
   phone: {
     primary: "+90 (555) 676 78 78",
     secondary: "+90 (370) 433 44 55",
@@ -171,9 +178,9 @@ const contactInfoData = {
     }
   },
   email: {
-    primary: "info@yilmazcolakhukuk.com",
-    consultation: "danismanlik@yilmazcolakhukuk.com",
-    career: "kariyer@yilmazcolakhukuk.com"
+    primary: "info@yilmazcolak.av.tr",
+    consultation: "danismanlik@yilmazcolak.av.tr",
+    career: "kariyer@yilmazcolak.av.tr"
   },
   workingHours: {
     weekdays: "Pazartesi - Cuma: 09:00 - 18:00",
@@ -376,17 +383,17 @@ const Footer = () => {
 
               {/* Phone Numbers */}
               <div className="space-y-2">
-                <a
+                <a 
                   href={`tel:${contactInfoData.phone.formatted.primary}`}
-                  className="flex items-center space-x-3 text-sm text-gray-600 hover:text-amber-600 transition-colors duration-300 group"
+                  className="flex items-center space-x-3 text-sm text-gray-600 hover:text-amber-600 transition-colors duration-300"
                 >
-                  <svg className="h-5 w-5 text-amber-600 group-hover:animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="h-5 w-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
                   </svg>
                   <span>{contactInfoData.phone.primary}</span>
                 </a>
-                
-                <a
+
+                <a 
                   href={`tel:${contactInfoData.phone.formatted.secondary}`}
                   className="flex items-center space-x-3 text-sm text-gray-600 hover:text-amber-600 transition-colors duration-300"
                 >
@@ -398,21 +405,19 @@ const Footer = () => {
               </div>
 
               {/* Email */}
-              <div>
-                <a
-                  href={`mailto:${contactInfoData.email.primary}`}
-                  className="flex items-center space-x-3 text-sm text-gray-600 hover:text-amber-600 transition-colors duration-300 group"
-                >
-                  <svg className="h-5 w-5 text-amber-600 group-hover:animate-bounce" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
-                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
-                  </svg>
-                  <span>{contactInfoData.email.primary}</span>
-                </a>
-              </div>
+              <a 
+                href={`mailto:${contactInfoData.email.primary}`}
+                className="flex items-center space-x-3 text-sm text-gray-600 hover:text-amber-600 transition-colors duration-300"
+              >
+                <svg className="h-5 w-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
+                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+                </svg>
+                <span>{contactInfoData.email.primary}</span>
+              </a>
 
               {/* Working Hours */}
-              <div className="pt-4 border-t border-gray-200">
+              <div className="pt-2">
                 <div className="text-sm text-gray-600 space-y-1">
                   <div>{contactInfoData.workingHours.weekdays}</div>
                   <div>{contactInfoData.workingHours.saturday}</div>
@@ -425,91 +430,84 @@ const Footer = () => {
 
               {/* Social Media */}
               <div className="pt-4">
-                <div className="text-sm font-medium text-gray-700 mb-3">Sosyal Medya</div>
                 <SocialMediaIcons socialLinks={contactInfoData.socialMedia} />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Mobile Layout - Accordion */}
-        <div className="lg:hidden">
+        {/* Mobile Layout - Accordion Style */}
+        <div className="lg:hidden space-y-0">
           
-          {/* Mobile Hesaplama Araçları */}
+          {/* Hesaplama Araçları */}
           <MobileAccordion title="Hesaplama Araçları" defaultOpen={true}>
             {calculationToolsData.map((tool) => (
               <Link
                 key={tool.id}
                 href={`/hesaplama-araclari/${tool.slug}`}
-                className="group block py-2"
+                className="block p-3 text-sm font-medium text-gray-700 hover:text-amber-600 hover:bg-amber-50/50 rounded-lg transition-all duration-300"
               >
-                <div className="text-sm font-medium text-gray-700 group-hover:text-amber-600 transition-colors duration-300">
-                  {tool.name}
-                </div>
-                <div className="text-xs text-gray-500 mt-1 group-hover:text-gray-600 transition-colors duration-300">
-                  {tool.description}
-                </div>
+                <div>{tool.name}</div>
+                <div className="text-xs text-gray-500 mt-1">{tool.description}</div>
               </Link>
             ))}
           </MobileAccordion>
 
-          {/* Mobile Kurumsal */}
+          {/* Kurumsal */}
           <MobileAccordion title="Kurumsal">
             {corporateLinksData.map((link) => (
               <Link
                 key={link.id}
                 href={link.href}
-                className="block py-2 text-sm text-gray-600 hover:text-amber-600 transition-colors duration-300"
+                className="block p-3 text-sm font-medium text-gray-700 hover:text-amber-600 hover:bg-amber-50/50 rounded-lg transition-all duration-300"
               >
                 {link.name}
               </Link>
             ))}
           </MobileAccordion>
 
-          {/* Mobile Hizmetler */}
+          {/* Hizmetler */}
           <MobileAccordion title="Hizmetler">
             {servicesLinksData.map((service) => (
               <Link
                 key={service.id}
                 href={service.href}
-                className="block py-2 text-sm text-gray-600 hover:text-amber-600 transition-colors duration-300"
+                className="block p-3 text-sm font-medium text-gray-700 hover:text-amber-600 hover:bg-amber-50/50 rounded-lg transition-all duration-300"
               >
                 {service.name}
               </Link>
             ))}
           </MobileAccordion>
 
-          {/* Mobile İletişim */}
+          {/* İletişim */}
           <MobileAccordion title="İletişim">
             {/* Mobile Address */}
-            <div className="py-2">
-              <div className="flex items-start space-x-3">
-                <svg className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <div className="p-3 text-sm text-gray-600 bg-gray-50/50 rounded-lg">
+              <div className="flex items-start space-x-2 mb-2">
+                <svg className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                 </svg>
-                <div className="text-sm text-gray-600 leading-relaxed">
-                  {contactInfoData.address.full}
-                </div>
+                <span>{contactInfoData.address.full}</span>
               </div>
             </div>
 
             {/* Mobile Phone Numbers */}
-            <div className="space-y-2 py-2">
-              <a
+            <div className="space-y-2">
+              <a 
                 href={`tel:${contactInfoData.phone.formatted.primary}`}
-                className="flex items-center space-x-3 text-sm text-gray-600 hover:text-amber-600 transition-colors duration-300"
+                className="flex items-center space-x-3 p-3 text-sm text-gray-600 hover:text-amber-600 hover:bg-amber-50/50 rounded-lg transition-all duration-300"
               >
-                <svg className="h-5 w-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="h-4 w-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
                 </svg>
                 <span>{contactInfoData.phone.primary}</span>
               </a>
-              
-              <a
+
+              <a 
                 href={`tel:${contactInfoData.phone.formatted.secondary}`}
-                className="flex items-center space-x-3 text-sm text-gray-600 hover:text-amber-600 transition-colors duration-300"
+                className="flex items-center space-x-3 p-3 text-sm text-gray-600 hover:text-amber-600 hover:bg-amber-50/50 rounded-lg transition-all duration-300"
               >
-                <svg className="h-5 w-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="h-4 w-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
                 </svg>
                 <span>{contactInfoData.phone.secondary}</span>
@@ -517,22 +515,20 @@ const Footer = () => {
             </div>
 
             {/* Mobile Email */}
-            <div className="py-2">
-              <a
-                href={`mailto:${contactInfoData.email.primary}`}
-                className="flex items-center space-x-3 text-sm text-gray-600 hover:text-amber-600 transition-colors duration-300"
-              >
-                <svg className="h-5 w-5 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
-                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
-                </svg>
-                <span>{contactInfoData.email.primary}</span>
-              </a>
-            </div>
+            <a 
+              href={`mailto:${contactInfoData.email.primary}`}
+              className="flex items-center space-x-3 p-3 text-sm text-gray-600 hover:text-amber-600 hover:bg-amber-50/50 rounded-lg transition-all duration-300"
+            >
+              <svg className="h-4 w-4 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
+                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+              </svg>
+              <span>{contactInfoData.email.primary}</span>
+            </a>
 
             {/* Mobile Working Hours */}
-            <div className="py-2 border-t border-gray-200">
-              <div className="text-sm text-gray-600 space-y-1">
+            <div className="p-3 text-sm text-gray-600 bg-gray-50/50 rounded-lg">
+              <div className="space-y-1">
                 <div>{contactInfoData.workingHours.weekdays}</div>
                 <div>{contactInfoData.workingHours.saturday}</div>
                 <div>{contactInfoData.workingHours.sunday}</div>
@@ -541,8 +537,9 @@ const Footer = () => {
                 </div>
               </div>
             </div>
-{/* Mobile Social Media */}
-            <div className="py-2">
+
+{/* Mobile Social Media - devamı */}
+            <div className="pt-2">
               <div className="text-sm font-medium text-gray-700 mb-3">Sosyal Medya</div>
               <SocialMediaIcons socialLinks={contactInfoData.socialMedia} />
             </div>
@@ -643,7 +640,9 @@ const Footer = () => {
             <div className="text-xs text-gray-400">
               Web tasarım ve geliştirme: 
               <span className="text-amber-600 hover:text-amber-700 font-medium ml-1 cursor-pointer transition-colors duration-300">
+                <Link href="https://ardacaliskan.com" target="_blank" rel="noopener noreferrer">
                 Arda Çalışkan
+                </Link>
               </span>
             </div>
           </div>

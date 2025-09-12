@@ -24,62 +24,6 @@ const practiceAreas = [
     slug: "idare-hukuku",
     description: "Kamu yönetimi ve idari davalar",
     icon: "🏛️"
-  },
-  {
-    id: 4,
-    name: "İş Hukuku",
-    slug: "is-hukuku",
-    description: "İşçi-işveren uyuşmazlıkları ve iş kazaları",
-    icon: "💼"
-  },
-  {
-    id: 5,
-    name: "Kira Hukuku",
-    slug: "kira-hukuku",
-    description: "Tahliye, kira artışı ve emlak uyuşmazlıkları",
-    icon: "🏠"
-  },
-  {
-    id: 6,
-    name: "Kişisel Verilerin Korunması Hukuku",
-    slug: "kvkk-hukuku",
-    description: "KVKK uyum süreçleri ve veri güvenliği",
-    icon: "🔒"
-  },
-  {
-    id: 7,
-    name: "Miras Hukuku",
-    slug: "miras-hukuku",
-    description: "Veraset, vasiyetname ve miras paylaşımı",
-    icon: "📜"
-  },
-  {
-    id: 8,
-    name: "Sağlık Hukuku",
-    slug: "saglik-hukuku",
-    description: "Tıbbi malpraktis ve sağlık mevzuatı",
-    icon: "🏥"
-  },
-  {
-    id: 9,
-    name: "Sigorta Hukuku",
-    slug: "sigorta-hukuku",
-    description: "Sigorta tazminat davalarında uzman hizmet",
-    icon: "🛡️"
-  },
-  {
-    id: 10,
-    name: "Tüketici Hukuku",
-    slug: "tuketici-hukuku",
-    description: "Tüketici hakları ve uyuşmazlık çözümleri",
-    icon: "🛒"
-  },
-  {
-    id: 11,
-    name: "Yabancılar Hukuku",
-    slug: "yabancilar-hukuku",
-    description: "Oturma izni, vatandaşlık ve vize işlemleri",
-    icon: "🌍"
   }
 ];
 
