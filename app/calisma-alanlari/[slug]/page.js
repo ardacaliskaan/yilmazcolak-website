@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 
-// Ultra Modern Color Palette - Ana sayfa için
+// Ultra Modern Professional Color Palette
 const modernColors = {
   midnight: "from-slate-900 via-gray-900 to-black",
   obsidian: "from-gray-900 via-slate-800 to-zinc-900", 
@@ -17,14 +18,10 @@ const modernColors = {
   plum: "from-purple-900 via-indigo-900 to-slate-900",
   steel: "from-slate-700 via-zinc-800 to-gray-900",
   sapphire: "from-blue-800 via-indigo-900 to-slate-900",
-  emerald: "from-emerald-800 via-teal-900 to-gray-900",
-  mahogany: "from-red-800 via-red-900 to-amber-900",
-  onyx: "from-gray-800 via-zinc-900 to-black",
-  copper: "from-orange-800 via-amber-900 to-yellow-900",
-  jade: "from-green-800 via-teal-900 to-cyan-900"
+  emerald: "from-emerald-800 via-teal-900 to-gray-900"
 };
 
-// Çalışma Alanları Verisi - Modern tasarım için
+// Practice Areas Data with Modern Structure
 const practiceAreasData = [
   {
     id: 1,
@@ -688,104 +685,12 @@ longDescription: "Miras hukuku alanında ailevi bağları koruyarak adil miras d
   }
 ];
 
-// Modern Practice Area Card Component
-const ModernPracticeAreaCard = ({ area, index }) => {
-  const [isHovered, setIsHovered] = useState(false);
-
-  return (
-    <div 
-      className="group relative overflow-hidden rounded-3xl shadow-2xl transition-all duration-700 hover:scale-105"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{
-        animationDelay: `${index * 150}ms`
-      }}
-    >
-      {/* Ultra Modern Background */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${area.gradient}`}>
-        {/* Sophisticated Pattern Overlay */}
-        <div className="absolute inset-0 opacity-[0.05]" 
-             style={{
-               backgroundImage: `url("data:image/svg+xml,%3csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3e%3cg fill='white' fill-opacity='1'%3e%3cpath d='M0 0h20v20H0zm20 20h20v20H20z'/%3e%3c/g%3e%3c/svg%3e")`,
-             }}>
-        </div>
-        
-        {/* Modern Floating Elements */}
-        <div className="absolute inset-0">
-          <div className="absolute top-4 right-4 w-24 h-24 bg-white/10 rounded-full blur-xl animate-pulse"></div>
-          <div className="absolute bottom-4 left-4 w-16 h-16 bg-white/5 rounded-full blur-lg animate-pulse delay-1000"></div>
-        </div>
-      </div>
-
-      {/* Content Container */}
-      <div className="relative z-10 p-10 text-white h-full flex flex-col min-h-[480px]">
-        
-        {/* Icon & Title Section */}
-        <div className="mb-8">
-          <div className="text-6xl mb-6 transform group-hover:scale-110 transition-transform duration-500">
-            {area.icon}
-          </div>
-          <h3 className="text-3xl font-black mb-3 tracking-tight leading-tight">
-            {area.name}
-          </h3>
-          <p className="text-white/80 text-lg font-light leading-relaxed">
-            {area.shortDescription}
-          </p>
-        </div>
-
-        {/* Description */}
-        <p className="text-white/90 leading-relaxed mb-8 flex-grow text-lg font-light">
-          {area.description}
-        </p>
-
-        {/* Features Grid */}
-        <div className="mb-8">
-          <h4 className="text-lg font-bold mb-4 text-white/90">Hizmet Alanları:</h4>
-          <div className="space-y-3">
-            {area.features.slice(0, 3).map((feature, idx) => (
-              <div key={idx} className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-white/70 rounded-full flex-shrink-0"></div>
-                <span className="text-white/80 font-medium">{feature}</span>
-              </div>
-            ))}
-            {area.features.length > 3 && (
-              <div className="flex items-center space-x-3">
-                <div className="w-2 h-2 bg-white/50 rounded-full flex-shrink-0"></div>
-                <span className="text-white/60 italic">+{area.features.length - 3} diğer alan</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Modern CTA Button */}
-        <Link
-          href={`/calisma-alanlari/${area.slug}`}
-          className="group/btn relative overflow-hidden px-8 py-4 bg-white/15 backdrop-blur-xl text-white font-bold rounded-2xl hover:bg-white/25 transition-all duration-300 border border-white/20 hover:border-white/40 hover:scale-105 text-center"
-        >
-          <span className="relative z-10 flex items-center justify-center">
-            Detaylı Bilgi
-            <svg className="ml-3 w-5 h-5 transform group-hover/btn:translate-x-1 transition-transform duration-300" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-          </span>
-          <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/20 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
-        </Link>
-      </div>
-
-      {/* Hover Effect Overlay */}
-      <div className={`absolute inset-0 bg-gradient-to-t from-black/30 to-transparent transition-opacity duration-500 ${
-        isHovered ? 'opacity-100' : 'opacity-0'
-      }`}></div>
-    </div>
-  );
-};
-
-// Ultra Modern Hero Section
-const ModernHeroSection = () => {
+// Modern Hero Section
+const HeroSection = ({ area }) => {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Ultra Modern Gradient Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-gray-900 to-black">
+      <div className={`absolute inset-0 bg-gradient-to-br ${area.gradient}`}>
         {/* Sophisticated Grid Overlay */}
         <div className="absolute inset-0 opacity-[0.03]" 
              style={{
@@ -795,47 +700,80 @@ const ModernHeroSection = () => {
         
         {/* Modern Floating Elements */}
         <div className="absolute inset-0">
-          <div className="absolute top-20 left-20 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-20 right-20 w-80 h-80 bg-blue-500/5 rounded-full blur-2xl animate-pulse delay-1000"></div>
-          <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-purple-500/8 rounded-full blur-xl animate-pulse delay-500"></div>
+          <div className="absolute top-20 left-20 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-20 w-80 h-80 bg-white/3 rounded-full blur-2xl animate-pulse delay-1000"></div>
+          <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-white/4 rounded-full blur-xl animate-pulse delay-500"></div>
         </div>
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         
-        {/* Modern Badge */}
-        <div className="inline-flex items-center px-6 py-3 bg-white/10 backdrop-blur-xl rounded-full text-white/90 text-sm font-semibold mb-12 border border-white/20">
-          <svg className="w-5 h-5 mr-3 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-          Uzman Hukuki Danışmanlık
+        {/* Modern Breadcrumb */}
+        <nav className="flex items-center justify-center space-x-2 text-white/60 mb-12 text-sm font-medium">
+          <Link href="/" className="hover:text-white transition-colors duration-300">Ana Sayfa</Link>
+          <div className="w-1 h-1 bg-white/40 rounded-full"></div>
+          <Link href="/calisma-alanlari" className="hover:text-white transition-colors duration-300">Çalışma Alanları</Link>
+          <div className="w-1 h-1 bg-white/40 rounded-full"></div>
+          <span className="text-white">{area.name}</span>
+        </nav>
+
+        {/* Icon with Modern Animation */}
+        <div className="text-8xl mb-8 animate-bounce-slow">
+          {area.icon}
         </div>
 
-        {/* Ultra Modern Title */}
-        <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-[0.9] mb-8 tracking-tight">
-          <span className="block">Çalışma</span>
-          <span className="block text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-500 to-red-500">
-            Alanlarımız
+        {/* Main Title with Ultra Modern Typography */}
+        <h1 className="text-5xl md:text-7xl font-black text-white leading-[0.9] mb-6 tracking-tight">
+          <span className="block">{area.name.split(' ')[0]}</span>
+          <span className="block text-white/80 text-4xl md:text-6xl font-light">
+            {area.name.split(' ').slice(1).join(' ')}
           </span>
         </h1>
 
-        {/* Modern Subtitle */}
-        <p className="text-xl md:text-2xl lg:text-3xl text-white/80 leading-relaxed mb-16 max-w-5xl mx-auto font-light">
-          Her hukuki alanda deneyimli kadromuz ve uzman yaklaşımımızla, 
-          <span className="block mt-2">haklarınızı korumak ve adaletin tecellisi için yanınızdayız.</span>
+        {/* Subtitle with Modern Styling */}
+        <p className="text-xl md:text-2xl text-white/80 mb-12 max-w-3xl mx-auto font-light leading-relaxed">
+          {area.shortDescription}
         </p>
 
-        {/* Modern Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+        {/* Ultra Modern CTA Buttons */}
+        <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+          <Link
+            href="/online-danismanlik"
+            className="group relative overflow-hidden px-10 py-5 bg-white text-gray-900 font-bold rounded-2xl transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+          >
+            <span className="relative z-10 flex items-center">
+              <svg className="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+              </svg>
+              Ücretsiz Danışmanlık
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-100 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </Link>
+          
+          <Link
+            href="/iletisim"
+            className="group px-10 py-5 bg-white/10 backdrop-blur-xl text-white font-semibold rounded-2xl border border-white/20 hover:bg-white/20 hover:border-white/40 transition-all duration-300"
+          >
+            <span className="flex items-center">
+              <svg className="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
+              </svg>
+              Hemen Arayın
+            </span>
+          </Link>
+        </div>
+
+        {/* Modern Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-16 max-w-4xl mx-auto">
           {[
-            { number: "6", label: "Uzman Alan" },
             { number: "15+", label: "Yıl Deneyim" },
             { number: "500+", label: "Başarılı Dava" },
-            { number: "24/7", label: "Destek" }
+            { number: "24/7", label: "Destek" },
+            { number: "100%", label: "Gizlilik" }
           ].map((stat, index) => (
-            <div key={index} className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 hover:bg-white/15 transition-all duration-300">
-              <div className="text-4xl md:text-5xl font-black text-white mb-3">{stat.number}</div>
-              <div className="text-white/70 font-medium text-lg">{stat.label}</div>
+            <div key={index} className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20">
+              <div className="text-3xl font-black text-white mb-2">{stat.number}</div>
+              <div className="text-white/70 text-sm font-medium">{stat.label}</div>
             </div>
           ))}
         </div>
@@ -844,136 +782,269 @@ const ModernHeroSection = () => {
   );
 };
 
-// Main Page Component
-export default function ModernPracticeAreasPage() {
+// Ultra Modern Content Section
+const ContentSection = ({ area }) => {
+  const [activeTab, setActiveTab] = useState('overview');
+
   return (
-    <>
-      <Header />
-      
-      <ModernHeroSection />
+    <section className="py-32 bg-white">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Modern Section Header */}
+        <div className="text-center mb-20">
+          <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-6 tracking-tight">
+            Detaylı Bilgiler
+          </h2>
+          <div className="w-24 h-1 bg-gradient-to-r from-amber-500 to-orange-500 mx-auto rounded-full"></div>
+        </div>
 
-      {/* Modern Practice Areas Grid */}
-      <section className="py-32 bg-gradient-to-b from-white to-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          {/* Modern Section Header */}
-          <div className="text-center mb-20">
-<h2 className="text-4xl md:text-6xl font-black text-gray-900 mb-8 tracking-tight leading-tight">
-              Hangi Konuda Yardıma 
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-orange-600">
-                İhtiyacınız Var?
-              </span>
-            </h2>
-            <div className="w-32 h-2 bg-gradient-to-r from-amber-500 to-orange-500 mx-auto rounded-full mb-8"></div>
-            <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed font-light">
-              Aşağıdaki çalışma alanlarımızdan size uygun olanı seçin ve 
-              <span className="block mt-2 font-medium">uzman kadromuzdan profesyonel destek alın.</span>
-            </p>
-          </div>
-
-          {/* Modern Cards Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-10 mb-20">
-            {practiceAreasData.map((area, index) => (
-              <ModernPracticeAreaCard 
-                key={area.id} 
-                area={area} 
-                index={index}
-              />
+        {/* Ultra Modern Tab Navigation */}
+        <div className="relative mb-20">
+          <div className="flex flex-wrap justify-center bg-gray-50 rounded-3xl p-3 shadow-inner">
+            {[
+              { id: 'overview', label: 'Genel Bakış', icon: '📋' },
+              { id: 'process', label: 'Süreç', icon: '🔄' },
+              { id: 'faq', label: 'S.S.S.', icon: '💬' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`relative flex items-center space-x-3 px-8 py-4 rounded-2xl font-semibold transition-all duration-300 ${
+                  activeTab === tab.id
+                    ? 'bg-white text-gray-900 shadow-lg scale-105'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+                }`}
+              >
+                <span className="text-xl">{tab.icon}</span>
+                <span>{tab.label}</span>
+                {activeTab === tab.id && (
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-amber-500 rounded-full"></div>
+                )}
+              </button>
             ))}
           </div>
+        </div>
 
-          {/* Ultra Modern Bottom CTA */}
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500 via-orange-600 to-red-600 p-16 text-center shadow-2xl">
-            
-            {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-10" 
-                 style={{
-                   backgroundImage: `url("data:image/svg+xml,%3csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3e%3cg fill='white' fill-opacity='1'%3e%3cpath d='M0 0h30v30H0zm30 30h30v30H30z'/%3e%3c/g%3e%3c/svg%3e")`,
-                 }}>
-            </div>
-
-            {/* Floating Elements */}
-            <div className="absolute inset-0">
-              <div className="absolute top-8 right-8 w-32 h-32 bg-white/10 rounded-full blur-2xl animate-pulse"></div>
-              <div className="absolute bottom-8 left-8 w-24 h-24 bg-white/5 rounded-full blur-xl animate-pulse delay-1000"></div>
-            </div>
-
-            <div className="relative z-10">
-              <h3 className="text-3xl md:text-5xl font-black text-white mb-6 tracking-tight leading-tight">
-                Hangi Alanda Danışmanlığa
-                <span className="block text-white/90 text-2xl md:text-4xl font-light mt-2">
-                  İhtiyacınız Var?
-                </span>
-              </h3>
+        {/* Tab Content with Modern Design */}
+        <div className="max-w-4xl mx-auto">
+          
+          {/* Overview Tab */}
+          {activeTab === 'overview' && (
+            <div className="space-y-12 animate-fade-in">
               
-              <p className="text-white/90 mb-12 text-xl md:text-2xl max-w-3xl mx-auto font-light leading-relaxed">
-                Uzman kadromuz size en uygun çözümü bulmak için burada. 
-                <span className="block mt-2 font-medium">Hemen iletişime geçin ve ücretsiz ön değerlendirme alın.</span>
-              </p>
-              
-              <div className="flex flex-col lg:flex-row gap-6 justify-center items-center">
-                <Link
-                  href="/online-danismanlik"
-                  className="group relative overflow-hidden px-12 py-6 bg-white text-amber-600 font-black text-xl rounded-3xl hover:bg-gray-50 transition-all duration-300 hover:scale-110 shadow-2xl min-w-[320px]"
-                >
-                  <span className="relative z-10 flex items-center justify-center">
-                    <svg className="w-6 h-6 mr-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-                    </svg>
-                    Online Danışmanlık Al
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-gray-50 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                </Link>
-                
-                <Link
-                  href="/iletisim"
-                  className="group px-12 py-6 bg-white/20 backdrop-blur-xl text-white font-bold text-xl rounded-3xl border-2 border-white/30 hover:bg-white/30 hover:border-white/50 transition-all duration-300 hover:scale-105 min-w-[320px]"
-                >
-                  <span className="flex items-center justify-center">
-                    <svg className="w-6 h-6 mr-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
-                    </svg>
-                    Hemen Arayın
-                  </span>
-                </Link>
+              {/* Main Description */}
+              <div className="prose prose-xl max-w-none">
+                <div className="text-gray-700 leading-relaxed text-lg whitespace-pre-line font-light">
+                  {area.longDescription}
+                </div>
               </div>
 
-              {/* Contact Info Cards */}
-              <div className="grid md:grid-cols-3 gap-6 mt-16">
-                <div className="bg-white/15 backdrop-blur-xl rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300">
-                  <div className="text-3xl mb-3">📞</div>
-                  <div className="text-white font-bold text-lg mb-1">Telefon</div>
-                  <div className="text-white/90 text-lg">0 (370) 418 46 34</div>
-                </div>
-                
-                <div className="bg-white/15 backdrop-blur-xl rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300">
-                  <div className="text-3xl mb-3">📧</div>
-                  <div className="text-white font-bold text-lg mb-1">E-posta</div>
-                  <div className="text-white/90 text-lg">info@yusufcolak.av.tr</div>
-                </div>
-                
-                <div className="bg-white/15 backdrop-blur-xl rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300">
-                  <div className="text-3xl mb-3">⏰</div>
-                  <div className="text-white font-bold text-lg mb-1">Çalışma Saatleri</div>
-                  <div className="text-white/90 text-lg">Pazartesi-Cuma 09:00-18:00</div>
+              {/* Modern Features Grid */}
+              <div className="bg-gradient-to-br from-gray-50 to-white rounded-3xl p-12 shadow-lg border">
+                <h3 className="text-3xl font-bold text-gray-900 mb-10 text-center">
+                  Hizmet Alanlarımız
+                </h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                  {area.features.map((feature, index) => (
+                    <div key={index} className="group flex items-center space-x-4 p-6 bg-white rounded-2xl shadow-sm border hover:shadow-md hover:scale-105 transition-all duration-300">
+<div className={`w-3 h-3 bg-amber-500 rounded-full flex-shrink-0 group-hover:scale-125 transition-transform duration-300`}></div>
+                      <span className="text-gray-800 font-medium text-lg group-hover:text-gray-900 transition-colors duration-300">{feature}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Process Tab */}
+{activeTab === 'process' && area.processes && (
+  <div className="animate-fade-in">
+    <h3 className="text-4xl font-bold text-gray-900 mb-12 text-center">
+      Çalışma Sürecimiz
+    </h3>
+    <div className="space-y-6">
+      {area.processes.map((step, index) => (
+        <div key={index} className="group">
+          <div className="flex items-start space-x-6 p-8 bg-white rounded-3xl shadow-lg border hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+            <div className="relative flex-shrink-0">
+              <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                {index + 1}
+              </div>
+              <div className="absolute -inset-2 bg-amber-100 rounded-2xl -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-bold text-gray-900 mb-3 text-xl">
+                {index + 1}. Adım
+              </h4>
+              <p className="text-gray-700 leading-relaxed text-lg font-light">{step}</p>
             </div>
           </div>
         </div>
-      </section>
+      ))}
+    </div>
+  </div>
+)}
 
+          {/* FAQ Tab */}
+          {activeTab === 'faq' && area.faqs && (
+            <div className="animate-fade-in">
+              <h3 className="text-4xl font-bold text-gray-900 mb-12 text-center">
+                Sıkça Sorulan Sorular
+              </h3>
+              <div className="space-y-8">
+                {area.faqs.map((faq, index) => (
+                  <div key={index} className="group bg-white rounded-3xl shadow-lg border p-8 hover:shadow-xl transition-all duration-300">
+                    <div className="flex items-start space-x-4">
+                      <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 mt-1">
+                        S
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-gray-900 mb-4 text-xl leading-tight">
+                          {faq.question}
+                        </h4>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start space-x-4 mt-6">
+                      <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">
+                        C
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-gray-700 leading-relaxed text-lg font-light">
+                          {faq.answer}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// Ultra Modern CTA Section
+const CTASection = ({ area }) => {
+  return (
+    <section className="relative py-32 overflow-hidden">
+      {/* Ultra Modern Background */}
+      <div className={`absolute inset-0 bg-gradient-to-br ${area.gradient}`}>
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0">
+          <div className="absolute top-0 left-0 w-full h-full opacity-10">
+            <div className="absolute top-20 left-20 w-64 h-64 bg-white rounded-full animate-pulse"></div>
+            <div className="absolute bottom-20 right-20 w-80 h-80 bg-white rounded-full animate-pulse delay-1000"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white rounded-full animate-pulse delay-500"></div>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        
+        {/* Modern Icon */}
+        <div className="text-7xl mb-8 animate-bounce-slow">
+          {area.icon}
+        </div>
+
+        {/* Ultra Modern Title */}
+        <h2 className="text-4xl md:text-6xl font-black text-white mb-8 tracking-tight leading-tight">
+          {area.name} Konusunda
+          <span className="block text-white/80 font-light text-3xl md:text-5xl mt-2">
+            Yardıma İhtiyacınız Var mı?
+          </span>
+        </h2>
+
+        {/* Modern Description */}
+        <p className="text-xl md:text-2xl text-white/90 mb-12 max-w-3xl mx-auto font-light leading-relaxed">
+          Uzman ekibimiz sizin için en uygun çözümü bulacak. 
+          <span className="block mt-2 font-medium">Hemen iletişime geçin ve ücretsiz ön değerlendirme alın.</span>
+        </p>
+
+        {/* Ultra Modern Action Buttons */}
+        <div className="flex flex-col lg:flex-row gap-8 justify-center items-center">
+          <Link
+            href="/online-danismanlik"
+            className="group relative overflow-hidden px-12 py-6 bg-white text-gray-900 font-black text-lg rounded-3xl transition-all duration-300 hover:scale-110 hover:shadow-2xl min-w-[280px]"
+          >
+            <span className="relative z-10 flex items-center justify-center">
+              <svg className="w-6 h-6 mr-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+              </svg>
+              Online Danışmanlık Al
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-50 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </Link>
+          
+          <Link
+            href="/iletisim"
+            className="group px-12 py-6 bg-white/15 backdrop-blur-xl text-white font-bold text-lg rounded-3xl border-2 border-white/30 hover:bg-white/25 hover:border-white/50 transition-all duration-300 hover:scale-105 min-w-[280px]"
+          >
+            <span className="flex items-center justify-center">
+              <svg className="w-6 h-6 mr-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/>
+              </svg>
+              Hemen Arayın
+            </span>
+          </Link>
+        </div>
+
+        {/* Modern Contact Info */}
+        <div className="mt-16 grid md:grid-cols-3 gap-8">
+          <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20">
+            <div className="text-2xl mb-3">📞</div>
+            <div className="text-white font-bold text-lg mb-1">Telefon</div>
+            <div className="text-white/80">0 (370) 418 46 34</div>
+          </div>
+          
+          <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20">
+            <div className="text-2xl mb-3">📧</div>
+            <div className="text-white font-bold text-lg mb-1">E-posta</div>
+            <div className="text-white/80">info@yusufcolak.av.tr</div>
+          </div>
+          
+          <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20">
+            <div className="text-2xl mb-3">⏰</div>
+            <div className="text-white font-bold text-lg mb-1">Çalışma Saatleri</div>
+            <div className="text-white/80">Pazartesi-Cuma 09:00-18:00</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// Main Component Export
+export default function PracticeAreaPage({ params }) {
+  const { slug } = params;
+  
+  // Find the area by slug
+  const area = practiceAreasData.find(area => area.slug === slug);
+
+  // If area not found, return 404
+  if (!area) {
+    notFound();
+  }
+
+  return (
+    <>
+      <Header />
+      <HeroSection area={area} />
+      <ContentSection area={area} />
+      <CTASection area={area} />
       <Footer />
     </>
   );
 }
 
-// CSS Animations
-const modernStyles = `
-  @keyframes fade-slide-up {
+// Add custom CSS for animations
+const styles = `
+  @keyframes fade-in {
     from {
       opacity: 0;
-      transform: translateY(30px);
+      transform: translateY(20px);
     }
     to {
       opacity: 1;
@@ -981,70 +1052,26 @@ const modernStyles = `
     }
   }
 
-  @keyframes bounce-gentle {
+  @keyframes bounce-slow {
     0%, 20%, 53%, 80%, 100% {
       transform: translateY(0px);
     }
     40%, 43% {
-      transform: translateY(-10px);
+      transform: translateY(-15px);
     }
     70% {
-      transform: translateY(-5px);
+      transform: translateY(-7px);
     }
     90% {
       transform: translateY(-2px);
     }
   }
 
-  @keyframes pulse-slow {
-    0%, 100% {
-      opacity: 0.4;
-    }
-    50% {
-      opacity: 0.8;
-    }
+  .animate-fade-in {
+    animation: fade-in 0.6s ease-out;
   }
 
-  .animate-fade-slide-up {
-    animation: fade-slide-up 0.8s ease-out;
-  }
-
-  .animate-bounce-gentle {
-    animation: bounce-gentle 4s infinite;
-  }
-
-  .animate-pulse-slow {
-    animation: pulse-slow 3s infinite;
-  }
-
-  /* Smooth scrolling enhancement */
-  html {
-    scroll-behavior: smooth;
-  }
-
-  /* Custom focus styles for accessibility */
-  *:focus-visible {
-    outline: 3px solid #f59e0b;
-    outline-offset: 2px;
-    border-radius: 8px;
-  }
-
-  /* Enhanced button hover effects */
-  .group:hover .group-hover\:scale-110 {
-    transform: scale(1.1);
-  }
-
-  /* Modern backdrop blur support */
-  @supports (backdrop-filter: blur(16px)) {
-    .backdrop-blur-xl {
-      backdrop-filter: blur(16px);
-    }
+  .animate-bounce-slow {
+    animation: bounce-slow 3s infinite;
   }
 `;
-
-// Add styles to head
-if (typeof document !== 'undefined') {
-  const styleSheet = document.createElement('style');
-  styleSheet.textContent = modernStyles;
-  document.head.appendChild(styleSheet);
-}

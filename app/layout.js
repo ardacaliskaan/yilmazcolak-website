@@ -1,3 +1,4 @@
+// app/layout.js - Senin mevcut layout'una metadataBase eklendi
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -12,6 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
+  metadataBase: new URL('https://yusufcolak.av.tr'), // Bu satırı ekledim
   title: "Yılmaz Çolak Hukuk Bürosu | Profesyonel Hukuki Danışmanlık",
   description:
     "Avukat Yılmaz Çolak Hukuk Bürosu - Profesyonel hukuki danışmanlık, sözleşme hazırlama ve mahkeme temsili hizmetleri. Adalet ve güvenin adresi.",
