@@ -1,49 +1,125 @@
-// components/home/TeamSection.js - useEffect ref problemi düzeltildi
+// components/home/TeamSection.js - iPhone Safari uyumlu scroll animasyonu
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import TeamCard from '@/components/team/TeamCard';
 import { getFeaturedTeamMembers } from '@/data/teamData';
 
 const TeamSection = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef(null);
-  const teamMembers = getFeaturedTeamMembers();
+  const [isClient, setIsClient] = useState(false);
+  const [teamMembers, setTeamMembers] = useState([]);
 
+  // Client-side mount kontrolü
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.1 }
-    );
+    setIsClient(true);
+    
+    // Team data'yı güvenli şekilde yükle
+    try {
+      const members = getFeaturedTeamMembers();
+      setTeamMembers(members);
+    } catch (error) {
+      console.log('Team data yükleme hatası:', error);
+      setTeamMembers([]);
+    }
+  }, []);
 
-    const currentRef = sectionRef.current; // Ref'i değişkene kopyala
+  // Scroll observer callback - useCallback ile optimize
+  const handleIntersection = useCallback((entries) => {
+    const entry = entries[0];
+    if (entry && entry.isIntersecting) {
+      setIsVisible(true);
+    }
+  }, []);
 
-    if (currentRef) {
-      observer.observe(currentRef);
+  // Scroll animasyonu - sadece client-side
+  useEffect(() => {
+    if (!isClient || typeof window === 'undefined') return;
+
+    // IntersectionObserver var mı kontrol et
+    if (!window.IntersectionObserver) {
+      // Desteklenmiyorsa direkt göster
+      setIsVisible(true);
+      return;
     }
 
+    let observer;
+    let element;
+
+    try {
+      // Element'i güvenli şekilde bul
+      element = document.getElementById('team-section');
+      if (!element) {
+        setIsVisible(true);
+        return;
+      }
+
+      // Observer'ı oluştur
+      observer = new IntersectionObserver(handleIntersection, {
+        threshold: 0.1,
+        rootMargin: '50px 0px',
+      });
+
+      observer.observe(element);
+
+    } catch (error) {
+      console.log('Observer hatası:', error);
+      setIsVisible(true);
+    }
+
+    // Cleanup
     return () => {
-      if (currentRef) { // Cleanup'ta kopyalanan değişkeni kullan
-        observer.unobserve(currentRef);
+      try {
+        if (observer && element) {
+          observer.unobserve(element);
+          observer.disconnect();
+        }
+      } catch (error) {
+        console.log('Cleanup hatası:', error);
       }
     };
-  }, []);
+  }, [isClient, handleIntersection]);
+
+  // Fallback timeout - eğer observer çalışmazsa 2 saniye sonra göster
+  useEffect(() => {
+    if (!isClient) return;
+    
+    const timeout = setTimeout(() => {
+      setIsVisible(true);
+    }, 2000);
+
+    return () => clearTimeout(timeout);
+  }, [isClient]);
+
+  // Server-side rendering için basit versiyon
+  if (!isClient) {
+    return (
+      <section className="py-20 lg:py-32 bg-gradient-to-b from-white to-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
+              <span className="bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                Uzman Kadromuz
+              </span>
+            </h2>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section 
-      ref={sectionRef}
+      id="team-section"
       className="py-20 lg:py-32 bg-gradient-to-b from-white to-gray-50"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Section Header */}
-        <div className={`text-center mb-16 transition-all duration-1000 ${
-          isVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10'
+        {/* Section Header - Animasyonlu */}
+        <div className={`text-center mb-16 transition-all duration-1000 ease-out ${
+          isVisible 
+            ? 'opacity-100 translate-y-0' 
+            : 'opacity-0 translate-y-10'
         }`}>
           <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-full mb-6">
             <svg className="w-8 h-8 text-amber-600" fill="currentColor" viewBox="0 0 20 20">
@@ -58,11 +134,10 @@ const TeamSection = () => {
           </h2>
           
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Alanında uzman, deneyimli avukatlarımız ile hukuki ihtiyaçlarınıza 
-            en profesyonel çözümleri sunuyoruz.
+            Alanında uzman, deneyimli avukatlarımız ile hukuki ihtiyaçlarınıza en profesyonel çözümleri sunuyoruz.
           </p>
 
-          {/* Stats */}
+          {/* Stats - Staggered Animation */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-2xl mx-auto mt-12">
             {[
               { number: `${teamMembers.length}+`, label: "Uzman Avukat" },
@@ -72,15 +147,19 @@ const TeamSection = () => {
             ].map((stat, index) => (
               <div 
                 key={index} 
-                className={`text-center transition-all duration-1000 ${
-                  isVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-5'
+                className={`text-center transition-all duration-1000 ease-out ${
+                  isVisible 
+                    ? 'opacity-100 translate-y-0' 
+                    : 'opacity-0 translate-y-8'
                 }`}
-                style={{ transitionDelay: `${0.2 + index * 0.1}s` }}
+                style={{ 
+                  transitionDelay: isVisible ? `${(index + 1) * 100}ms` : '0ms' 
+                }}
               >
-                <div className="text-2xl md:text-3xl font-bold text-amber-600 mb-2">
+                <div className="text-3xl md:text-4xl font-bold text-amber-600 mb-2">
                   {stat.number}
                 </div>
-                <div className="text-gray-600 text-sm font-medium">
+                <div className="text-gray-600 font-medium">
                   {stat.label}
                 </div>
               </div>
@@ -88,38 +167,109 @@ const TeamSection = () => {
           </div>
         </div>
 
-        {/* Team Grid */}
-        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 transition-all duration-1000 ${
-          isVisible ? 'opacity-100' : 'opacity-0'
+        {/* Team Grid - Staggered Cards */}
+        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16 transition-all duration-1000 ease-out ${
+          isVisible 
+            ? 'opacity-100 translate-y-0' 
+            : 'opacity-0 translate-y-10'
         }`}>
           {teamMembers.map((member, index) => (
             <div
               key={member.id}
-              className={`transition-all duration-700 ${
+              className={`transition-all duration-700 ease-out ${
                 isVisible 
-                  ? 'opacity-100 transform translate-y-0' 
-                  : 'opacity-0 transform translate-y-10'
+                  ? 'opacity-100 translate-y-0' 
+                  : 'opacity-0 translate-y-12'
               }`}
               style={{ 
-                transitionDelay: isVisible ? `${0.5 + index * 0.1}s` : '0s'
+                transitionDelay: isVisible ? `${(index + 5) * 100}ms` : '0ms' 
               }}
             >
-              <TeamCard 
-                member={member} 
-                index={index}
-              />
+              <Link
+                href={`/ekibimiz/${member.slug}`}
+                className="group block"
+              >
+                <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden transform hover:-translate-y-2 border border-gray-100">
+                  
+                  {/* Image Container */}
+                  <div className="relative aspect-[4/5] bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden">
+                    
+                    {/* Fallback Avatar */}
+                    <div className="flex items-center justify-center h-full bg-gradient-to-br from-amber-100 to-orange-100">
+                      <div className="text-center">
+                        <div className="w-20 h-20 bg-white/80 rounded-full flex items-center justify-center shadow-lg mb-2">
+                          <span className="text-2xl font-bold text-amber-600">
+                            {member.name.split(' ').map(n => n[0]).join('').slice(-2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actual Image */}
+                    {member.image && (
+                      <img
+                        src={member.image}
+                        alt={member.name}
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                        loading="lazy"
+                      />
+                    )}
+                  </div>
+
+                  {/* Card Content */}
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-amber-600 transition-colors duration-300">
+                      {member.name}
+                    </h3>
+                    
+                    <div className="text-amber-600 font-semibold text-sm mb-3 bg-amber-50 rounded-lg px-3 py-1 inline-block">
+                      {member.title}
+                    </div>
+
+                    {/* Specializations */}
+                    {member.specializations && member.specializations.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-4">
+                        {member.specializations.slice(0, 2).map((spec, specIndex) => (
+                          <span 
+                            key={specIndex}
+                            className="inline-block px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs"
+                          >
+                            {spec}
+                          </span>
+                        ))}
+                        {member.specializations.length > 2 && (
+                          <span className="inline-block px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
+                            +{member.specializations.length - 2}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex items-center text-amber-600 text-sm font-medium group-hover:text-amber-700 transition-colors duration-300">
+                      <span>Profili Görün</span>
+                      <svg className="ml-1 h-4 w-4 transform group-hover:translate-x-1 transition-transform duration-300" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </Link>
             </div>
           ))}
         </div>
 
-        {/* CTA Section */}
-        <div className={`text-center mt-16 transition-all duration-1000 ${
-          isVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-10'
-        }`} style={{ transitionDelay: '1s' }}>
-          
-          <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-3xl p-8 md:p-12 text-white">
-            <h3 className="text-2xl md:text-3xl font-bold mb-4">
-              Hangi Alanda Uzman Desteğe İhtiyacınız Var?
+        {/* CTA Section - Animasyonlu */}
+        <div className={`bg-gradient-to-r from-amber-600 via-amber-500 to-orange-600 rounded-3xl p-8 lg:p-12 text-center shadow-2xl transition-all duration-1000 ease-out ${
+          isVisible 
+            ? 'opacity-100 translate-y-0' 
+            : 'opacity-0 translate-y-10'
+        }`}
+        style={{ 
+          transitionDelay: isVisible ? '800ms' : '0ms' 
+        }}>
+          <div className="max-w-4xl mx-auto">
+            <h3 className="text-2xl lg:text-3xl font-bold text-white mb-4">
+              Hukuki Destek İhtiyacınız mı Var?
             </h3>
             <p className="text-amber-100 mb-8 text-lg">
               Deneyimli kadromuz size en uygun hukuki çözümü bulmak için burada. 
@@ -148,12 +298,6 @@ const TeamSection = () => {
               </Link>
             </div>
           </div>
-        </div>
-
-        {/* Background Decorative Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-10 -right-10 w-72 h-72 bg-amber-200/20 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-10 -left-10 w-96 h-96 bg-orange-200/20 rounded-full blur-3xl"></div>
         </div>
       </div>
     </section>
