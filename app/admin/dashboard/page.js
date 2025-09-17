@@ -1,4 +1,4 @@
-// app/admin/dashboard/page.js - Dashboard Sayfası
+// app/admin/dashboard/page.js - Tam Dashboard Sayfası (Düzeltildi)
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -27,9 +27,9 @@ export default function AdminDashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      // Burada tüm dashboard verilerini çek
+      // Dashboard verilerini çek
       const [teamResponse] = await Promise.all([
-        fetch('/api/admin/team?limit=1000')
+        fetch('/api/admin/team?limit=1000', { credentials: 'include' })
       ]);
 
       if (teamResponse.ok) {
@@ -93,7 +93,7 @@ export default function AdminDashboard() {
         <p className="text-gray-600">Admin paneline hoş geldiniz.</p>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats Grid - Renk hatası düzeltildi */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Toplam Ekip"
