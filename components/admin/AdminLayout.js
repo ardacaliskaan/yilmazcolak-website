@@ -1,21 +1,20 @@
-// components/admin/AdminLayout.js - Ana Admin Layout
+// components/admin/AdminLayout.js
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  Menu, 
-  X, 
-  Home, 
-  Users, 
-  FileText, 
-  Settings, 
+import {
+  Menu,
+  X,
+  Home,
+  Users,
+  FileText,
+  Settings,
   LogOut,
   User,
   ChevronDown,
   Shield,
-  Bell
 } from 'lucide-react';
 
 const AdminLayout = ({ children }) => {
@@ -26,13 +25,9 @@ const AdminLayout = ({ children }) => {
   const pathname = usePathname();
 
   // Kullanıcı bilgilerini getir
-  useEffect(() => {
-    fetchUserData();
-  }, []);
-
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     try {
-      const response = await fetch('/api/auth/me');
+      const response = await fetch('/api/auth/me', { credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
@@ -43,78 +38,103 @@ const AdminLayout = ({ children }) => {
       console.error('User fetch error:', error);
       router.push('/admin/login');
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    // Login sayfasında user fetch etme
+    if (pathname !== '/admin/login') {
+      fetchUserData();
+    }
+  }, [pathname, fetchUserData]);
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
       router.push('/admin/login');
     } catch (error) {
       console.error('Logout error:', error);
     }
   };
 
-  // Menü yapısı - yetkilere göre dinamik
+  // Eğer login sayfasındaysak layoutu bypass et
+  if (pathname === '/admin/login') {
+    return <>{children}</>;
+  }
+
+  // Menü yapısı
   const getMenuItems = () => {
     if (!user) return [];
 
-    const baseItems = [
+    const items = [
       {
         name: 'Dashboard',
         href: '/admin/dashboard',
         icon: Home,
-        requiredPermission: null
-      }
+      },
     ];
 
-    // Ekip yönetimi yetkisi kontrolü
-    if (user.permissions?.some(p => p.module === 'team' && p.actions.includes('read'))) {
-      baseItems.push({
+    if (
+      user.permissions?.some(
+        (p) => p.module === 'team' && p.actions.includes('read')
+      )
+    ) {
+      items.push({
         name: 'Ekip Yönet',
         href: '/admin/team',
         icon: Users,
-        requiredPermission: 'team'
       });
     }
 
-    // Makale yönetimi yetkisi kontrolü
-    if (user.permissions?.some(p => p.module === 'articles' && p.actions.includes('read'))) {
-      baseItems.push({
+    if (
+      user.permissions?.some(
+        (p) => p.module === 'articles' && p.actions.includes('read')
+      )
+    ) {
+      items.push({
         name: 'Makaleler',
         href: '/admin/articles',
         icon: FileText,
-        requiredPermission: 'articles'
       });
     }
 
-    // Kullanıcı yönetimi yetkisi kontrolü (sadece admin ve super-admin)
-    if (user.permissions?.some(p => p.module === 'users' && p.actions.includes('read'))) {
-      baseItems.push({
+    if (
+      user.permissions?.some(
+        (p) => p.module === 'users' && p.actions.includes('read')
+      )
+    ) {
+      items.push({
         name: 'Kullanıcılar',
         href: '/admin/users',
         icon: Shield,
-        requiredPermission: 'users'
       });
     }
 
-    // Ayarlar yetkisi kontrolü
-    if (user.permissions?.some(p => p.module === 'settings' && p.actions.includes('read'))) {
-      baseItems.push({
+    if (
+      user.permissions?.some(
+        (p) => p.module === 'settings' && p.actions.includes('read')
+      )
+    ) {
+      items.push({
         name: 'Ayarlar',
         href: '/admin/settings',
         icon: Settings,
-        requiredPermission: 'settings'
       });
     }
 
-    return baseItems;
+    return items;
   };
 
   const menuItems = getMenuItems();
 
   const Sidebar = ({ isMobile = false }) => (
-    <div className={`${isMobile ? 'lg:hidden' : 'hidden lg:block'} w-64 bg-white shadow-lg border-r border-gray-200 h-full`}>
-      
+    <div
+      className={`${
+        isMobile ? 'lg:hidden' : 'hidden lg:block'
+      } w-64 bg-white shadow-lg border-r border-gray-200 h-full`}
+    >
       {/* Logo */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">
@@ -131,8 +151,8 @@ const AdminLayout = ({ children }) => {
       {/* Navigation */}
       <nav className="mt-6 px-4">
         {menuItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-          
+          const isActive =
+            pathname === item.href || pathname.startsWith(item.href + '/');
           return (
             <Link
               key={item.name}
@@ -144,7 +164,11 @@ const AdminLayout = ({ children }) => {
               }`}
               onClick={() => isMobile && setSidebarOpen(false)}
             >
-              <item.icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-gray-500'}`} />
+              <item.icon
+                className={`w-5 h-5 ${
+                  isActive ? 'text-white' : 'text-gray-500'
+                }`}
+              />
               <span className="font-medium">{item.name}</span>
             </Link>
           );
@@ -159,7 +183,9 @@ const AdminLayout = ({ children }) => {
               <User className="w-5 h-5 text-amber-600" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-800 truncate">{user.name}</p>
+              <p className="text-sm font-medium text-gray-800 truncate">
+                {user.name}
+              </p>
               <p className="text-xs text-gray-500 truncate">{user.role}</p>
             </div>
           </div>
@@ -177,14 +203,16 @@ const AdminLayout = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      
       {/* Desktop Sidebar */}
       <Sidebar />
 
       {/* Mobile Sidebar */}
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
-          <div className="fixed inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={() => setSidebarOpen(false)}
+          />
           <div className="relative w-64 bg-white h-full">
             <div className="absolute top-4 right-4 lg:hidden">
               <button
@@ -201,10 +229,8 @@ const AdminLayout = ({ children }) => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        
         {/* Top Header */}
         <header className="bg-white shadow-sm border-b border-gray-200 h-16 flex items-center justify-between px-6">
-          
           {/* Mobile Menu Button */}
           <button
             onClick={() => setSidebarOpen(true)}
@@ -216,7 +242,8 @@ const AdminLayout = ({ children }) => {
           {/* Header Title */}
           <div className="hidden lg:block">
             <h2 className="text-xl font-semibold text-gray-800">
-              {menuItems.find(item => pathname === item.href)?.name || 'Admin Panel'}
+              {menuItems.find((item) => pathname === item.href)?.name ||
+                'Admin Panel'}
             </h2>
           </div>
 
@@ -233,16 +260,19 @@ const AdminLayout = ({ children }) => {
                 <p className="text-sm font-medium text-gray-800">{user?.name}</p>
                 <p className="text-xs text-gray-500">{user?.role}</p>
               </div>
-              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
-                userMenuOpen ? 'rotate-180' : ''
-              }`} />
+              <ChevronDown
+                className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                  userMenuOpen ? 'rotate-180' : ''
+                }`}
+              />
             </button>
 
-            {/* User Dropdown */}
             {userMenuOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10">
                 <div className="px-4 py-2 border-b border-gray-100">
-                  <p className="text-sm font-medium text-gray-800">{user?.name}</p>
+                  <p className="text-sm font-medium text-gray-800">
+                    {user?.name}
+                  </p>
                   <p className="text-xs text-gray-500">{user?.email}</p>
                 </div>
                 <button
@@ -258,9 +288,7 @@ const AdminLayout = ({ children }) => {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-6">
-          {children}
-        </main>
+        <main className="flex-1 p-6">{children}</main>
       </div>
     </div>
   );

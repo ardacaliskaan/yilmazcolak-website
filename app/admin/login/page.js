@@ -2,20 +2,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { Eye, EyeOff, Lock, Mail, AlertCircle } from 'lucide-react';
 
 export default function AdminLogin() {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  
-  const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,53 +16,61 @@ export default function AdminLogin() {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/login', {
+      console.log('[LOGIN] gönderilen form:', formData);
+
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Cookie gelsin
+        body: JSON.stringify({
+          email: formData.email.trim().toLowerCase(),
+          password: formData.password,
+        }),
       });
 
-      const data = await response.json();
+      const data = await res.json().catch(() => ({}));
+      console.log('[LOGIN] response:', res.status, data);
 
-      if (response.ok) {
-        router.push('/admin/dashboard');
-        router.refresh();
+      if (res.ok) {
+        // 100ms bekle → cookie kesin yazılsın
+        await new Promise((r) => setTimeout(r, 100));
+        window.location.href = '/admin/dashboard';
       } else {
-        setError(data.message || 'Giriş başarısız');
+        setError(data.message || 'Geçersiz email ya da şifre');
       }
-    } catch (error) {
-      setError('Bağlantı hatası oluştu');
+    } catch (err) {
+      console.error('[LOGIN] hata:', err);
+      setError('Sunucuya bağlanırken hata oluştu');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleChange = (e) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-      
-      {/* Background Pattern */}
+      {/* Arkaplan */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-600/10 to-orange-600/10"></div>
-        <div className="absolute inset-0" style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.1) 1px, transparent 0)`,
-          backgroundSize: '30px 30px'
-        }}></div>
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.1) 1px, transparent 0)`,
+            backgroundSize: '30px 30px',
+          }}
+        ></div>
       </div>
 
-      {/* Login Card */}
+      {/* Kart */}
       <div className="relative w-full max-w-md">
         <div className="bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl p-8 border border-white/20">
-          
-          {/* Logo & Header */}
+          {/* Logo & Başlık */}
           <div className="text-center mb-8">
             <div className="w-20 h-20 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Lock className="w-10 h-10 text-white" />
@@ -78,7 +79,7 @@ export default function AdminLogin() {
             <p className="text-gray-600">Yılmaz Çolak Hukuk Bürosu</p>
           </div>
 
-          {/* Error Message */}
+          {/* Hata Mesajı */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center space-x-3">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
@@ -86,12 +87,14 @@ export default function AdminLogin() {
             </div>
           )}
 
-          {/* Login Form */}
+          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            
-            {/* Email Field */}
+            {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 E-posta Adresi
               </label>
               <div className="relative">
@@ -111,9 +114,12 @@ export default function AdminLogin() {
               </div>
             </div>
 
-            {/* Password Field */}
+            {/* Şifre */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Şifre
               </label>
               <div className="relative">
@@ -144,7 +150,7 @@ export default function AdminLogin() {
               </div>
             </div>
 
-            {/* Submit Button */}
+            {/* Buton */}
             <button
               type="submit"
               disabled={isLoading}

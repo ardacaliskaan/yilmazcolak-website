@@ -1,15 +1,17 @@
-// app/api/auth/logout/route.js - Çıkış API'si
-import { NextResponse } from 'next/server';
+// app/api/auth/logout/route.js
+import { NextResponse } from "next/server";
 
-export async function POST() {
-  const response = NextResponse.json({ message: 'Çıkış başarılı' });
-  
-  response.cookies.set('admin-token', '', {
+export async function POST(request) {
+  const res = NextResponse.json({ message: "Çıkış başarılı" });
+  const isHttps = new URL(request.url).protocol === "https:";
+
+  res.cookies.set("admin-token", "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 0
+    secure: isHttps,
+    sameSite: "lax",
+    path: "/",     // <- önemli
+    maxAge: 0,     // hemen sil
   });
-  
-  return response;
+
+  return res;
 }

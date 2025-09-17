@@ -1,31 +1,26 @@
-// middleware.js - Route Protection
+// middleware.js
 import { NextResponse } from 'next/server';
-import { verifyToken } from './lib/auth';
 
 export function middleware(request) {
   const { pathname } = request.nextUrl;
-  
-  // Admin route'larını koru
-  if (pathname.startsWith('/admin')) {
-    const token = request.cookies.get('admin-token');
-    
-    // Login sayfasına gidiyorsa, zaten giriş yapmışsa dashboard'a yönlendir
-    if (pathname === '/admin/login') {
-      if (token && verifyToken(token.value)) {
-        return NextResponse.redirect(new URL('/admin/dashboard', request.url));
-      }
-      return NextResponse.next();
+  if (!pathname.startsWith('/admin')) return NextResponse.next();
+
+  const token = request.cookies.get('admin-token')?.value;
+
+  // Login sayfası: token varsa dashboard'a yolla
+  if (pathname === '/admin/login') {
+    if (token) {
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url));
     }
-    
-    // Diğer admin sayfaları için token kontrolü
-    if (!token || !verifyToken(token.value)) {
-      return NextResponse.redirect(new URL('/admin/login', request.url));
-    }
+    return NextResponse.next();
   }
-  
+
+  // Diğer admin sayfaları: token yoksa login'e yolla
+  if (!token) {
+    return NextResponse.redirect(new URL('/admin/login', request.url));
+  }
+
   return NextResponse.next();
 }
 
-export const config = {
-  matcher: ['/admin/:path*']
-};
+export const config = { matcher: ['/admin/:path*'] };
