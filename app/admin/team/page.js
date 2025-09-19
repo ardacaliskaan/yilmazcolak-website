@@ -474,7 +474,7 @@ export default function AdminTeamManagement() {
               placeholder="İsim, ünvan veya email ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black"
             />
           </div>
 
@@ -482,7 +482,7 @@ export default function AdminTeamManagement() {
           <select
             value={filterPosition}
             onChange={(e) => setFilterPosition(e.target.value)}
-            className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
+            className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black"
           >
             <option value="">Tüm Pozisyonlar</option>
             {positionOptions.map(option => (
@@ -496,7 +496,7 @@ export default function AdminTeamManagement() {
           <select
             value={filterActive}
             onChange={(e) => setFilterActive(e.target.value)}
-            className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
+            className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black"
           >
             <option value="">Tüm Durumlar</option>
             <option value="true">Aktif</option>

@@ -507,7 +507,7 @@ export default function CreateTeamMember() {
                         required
                         value={formData.name}
                         onChange={handleInputChange}
-                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-black ${
                           errors.name ? 'border-red-300 bg-red-50' : 'border-gray-300'
                         }`}
                         placeholder="Av. Ahmet Yılmaz"
@@ -526,7 +526,7 @@ export default function CreateTeamMember() {
                         required
                         value={formData.title}
                         onChange={handleInputChange}
-                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-black ${
                           errors.title ? 'border-red-300 bg-red-50' : 'border-gray-300'
                         }`}
                         placeholder="Avukat"
@@ -546,7 +546,7 @@ export default function CreateTeamMember() {
                           required
                           value={formData.slug}
                           onChange={handleInputChange}
-                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-black ${
                             errors.slug ? 'border-red-300 bg-red-50' : 'border-gray-300'
                           }`}
                           placeholder="ahmet-yilmaz"
@@ -557,11 +557,11 @@ export default function CreateTeamMember() {
                       </div>
                       <p className="mt-1 text-xs text-gray-500 flex items-center space-x-1">
                         <span>URL:</span>
-                        <code className="bg-gray-100 px-2 py-1 rounded text-xs">
+                        <code className="bg-gray-100 px-2 py-1 rounded text-xs text-black">
                           /ekibimiz/{formData.slug || 'slug'}
                         </code>
                       </p>
-                      {errors.slug && <p className="mt-1 text-sm text-red-600">{errors.slug}</p>}
+                      {errors.slug && <p className="mt-1 text-sm text-red-600 text-black">{errors.slug}</p>}
                     </div>
 
                     {/* Position */}
@@ -574,7 +574,7 @@ export default function CreateTeamMember() {
                         required
                         value={formData.position}
                         onChange={handleInputChange}
-                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-black ${
                           errors.position ? 'border-red-300 bg-red-50' : 'border-gray-300'
                         }`}
                       >
@@ -598,7 +598,7 @@ export default function CreateTeamMember() {
                           name="image"
                           value={formData.image || ''}
                           onChange={handleInputChange}
-                          className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                          className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-black"
                           placeholder="/images/team/ahmet-yilmaz.jpg"
                         />
                         <div className="absolute right-3 top-3">
@@ -631,7 +631,7 @@ export default function CreateTeamMember() {
                       rows={4}
                       value={formData.bio || ''}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-black ${
                         errors.bio ? 'border-red-300 bg-red-50' : 'border-gray-300'
                       }`}
                       placeholder="Kısa biyografi yazın..."
@@ -729,7 +729,7 @@ export default function CreateTeamMember() {
                           max={new Date().getFullYear()}
                           value={formData.birthYear}
                           onChange={handleInputChange}
-                          className={`w-full px-4 py-3 pr-12 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                          className={`w-full px-4 py-3 pr-12 border rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-black ${
                             errors.birthYear ? 'border-red-300 bg-red-50' : 'border-gray-300'
                           }`}
                           placeholder="1990"
@@ -751,7 +751,7 @@ export default function CreateTeamMember() {
                         name="birthPlace"
                         value={formData.birthPlace || ''}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-black"
                         placeholder="İstanbul"
                       />
                     </div>
@@ -766,7 +766,7 @@ export default function CreateTeamMember() {
                         name="barAssociation"
                         value={formData.barAssociation || ''}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-black"
                         placeholder="Karabük Barosu"
                       />
                     </div>
@@ -783,7 +783,7 @@ export default function CreateTeamMember() {
                         max="999"
                         value={formData.sortOrder}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-black"
                         placeholder="0"
                       />
                       <p className="mt-1 text-xs text-gray-500">Küçük sayılar önce gösterilir</p>
@@ -799,7 +799,7 @@ export default function CreateTeamMember() {
                         name="masterThesis"
                         value={formData.masterThesis || ''}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-black"
                         placeholder="Tez konusu..."
                       />
                     </div>
@@ -814,7 +814,7 @@ export default function CreateTeamMember() {
                         name="specialFocus"
                         value={formData.specialFocus || ''}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-black"
                         placeholder="Özel uzmanlık alanı..."
                       />
                     </div>
@@ -830,7 +830,7 @@ export default function CreateTeamMember() {
                           name="internshipLocation"
                           value={formData.internshipLocation || ''}
                           onChange={handleInputChange}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-black"
                           placeholder="Staj yapılan büro..."
                         />
                       </div>
@@ -851,7 +851,7 @@ export default function CreateTeamMember() {
                   <button
                     type="button"
                     onClick={addEducation}
-                    className="inline-flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all duration-200 font-medium"
+                    className="inline-flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all duration-200 font-medium text-black"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Eğitim Ekle</span>
@@ -867,7 +867,7 @@ export default function CreateTeamMember() {
                           <button
                             type="button"
                             onClick={() => removeEducation(index)}
-                            className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-all duration-200"
+                            className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-all duration-200 text-black"
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -881,7 +881,7 @@ export default function CreateTeamMember() {
                             <select
                               value={edu.degree || ''}
                               onChange={(e) => updateEducation(index, 'degree', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
                             >
                               <option value="">Derece seçin</option>
                               {DEGREE_OPTIONS.map(degree => (
@@ -898,7 +898,7 @@ export default function CreateTeamMember() {
                               type="text"
                               value={edu.institution || ''}
                               onChange={(e) => updateEducation(index, 'institution', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
                               placeholder="Üniversite/Kurum adı"
                             />
                           </div>
@@ -911,7 +911,7 @@ export default function CreateTeamMember() {
                               type="text"
                               value={edu.year || ''}
                               onChange={(e) => updateEducation(index, 'year', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
                               placeholder="2020-2024"
                             />
                           </div>
@@ -925,7 +925,7 @@ export default function CreateTeamMember() {
                             rows={2}
                             value={edu.description || ''}
                             onChange={(e) => updateEducation(index, 'description', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
                             placeholder="Ek bilgiler..."
                           />
                         </div>
@@ -941,7 +941,7 @@ export default function CreateTeamMember() {
                         <button
                           type="button"
                           onClick={addEducation}
-                          className="inline-flex items-center space-x-2 px-4 py-2 text-green-600 hover:text-green-700 font-medium"
+                          className="inline-flex items-center space-x-2 px-4 py-2 text-green-600 hover:text-green-700 font-medium text-black"
                         >
                           <Plus className="w-4 h-4" />
                           <span>İlk eğitimi ekle</span>
@@ -1040,7 +1040,7 @@ export default function CreateTeamMember() {
                       return (
                         <label
                           key={spec}
-                          className={`relative flex items-center p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-sm ${
+                          className={`relative flex items-center p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-sm text-black ${
                             isSelected
                               ? 'bg-green-50 border-green-300 text-green-900 shadow-sm'
                               : 'bg-white border-gray-200 hover:border-gray-300'
@@ -1050,11 +1050,11 @@ export default function CreateTeamMember() {
                             type="checkbox"
                             checked={isSelected}
                             onChange={() => toggleSpecialization(spec)}
-                            className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500 focus:ring-2 mr-3"
+                            className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500 focus:ring-2 mr-3 text-black"
                           />
                           <span className="text-sm font-medium select-none">{spec}</span>
                           {isPopular && (
-                            <div className="absolute -top-2 -right-2 w-4 h-4 bg-amber-400 rounded-full flex items-center justify-center">
+                            <div className="absolute -top-2 -right-2 w-4 h-4 bg-amber-400 rounded-full flex items-center justify-center text-black">
                               <Sparkles className="w-2 h-2 text-white" />
                             </div>
                           )}
@@ -1069,7 +1069,7 @@ export default function CreateTeamMember() {
                       <button
                         type="button"
                         onClick={addPopularSpecializations}
-                        className="inline-flex items-center space-x-2 px-4 py-2 text-green-600 hover:text-green-700 font-medium"
+                        className="inline-flex items-center space-x-2 px-4 py-2 text-green-600 hover:text-green-700 font-medium text-black"
                       >
                         <Sparkles className="w-4 h-4" />
                         <span>Popüler alanları ekle</span>
@@ -1139,7 +1139,7 @@ export default function CreateTeamMember() {
                       name="seoTitle"
                       value={formData.seoTitle || ''}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-black"
                       placeholder="Otomatik oluşturulacak..."
                     />
                   </div>
@@ -1153,7 +1153,7 @@ export default function CreateTeamMember() {
                       rows={3}
                       value={formData.seoDescription || ''}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-black"
                       placeholder="Otomatik oluşturulacak..."
                     />
                     <p className="mt-1 text-xs text-gray-500">

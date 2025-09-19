@@ -13,7 +13,7 @@ export async function GET(request) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
     
-    if (!hasPermission(session, MODULES.TEAM, ACTIONS.READ)) {
+if (!hasPermission(session.user, MODULES.TEAM, ACTIONS.READ)) {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
     
@@ -69,12 +69,12 @@ export async function GET(request) {
 // Yeni ekip üyesi oluştur
 export async function POST(request) {
   try {
-    const session = await getServerSession();
+const session = await getServerSession(request);
     if (!session) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
     
-    if (!hasPermission(session, MODULES.TEAM, ACTIONS.CREATE)) {
+if (!hasPermission(session.user, MODULES.TEAM, ACTIONS.CREATE)) {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
     

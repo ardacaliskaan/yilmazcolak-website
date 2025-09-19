@@ -13,7 +13,7 @@ export async function GET(request, { params }) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
     
-    if (!hasPermission(session, MODULES.TEAM, ACTIONS.READ)) {
+    if (!hasPermission(session.user, MODULES.TEAM, ACTIONS.READ)) {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
     
@@ -35,12 +35,12 @@ export async function GET(request, { params }) {
 // Ekip üyesini güncelle
 export async function PUT(request, { params }) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(request);
     if (!session) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
     
-    if (!hasPermission(session, MODULES.TEAM, ACTIONS.UPDATE)) {
+    if (!hasPermission(session.user, MODULES.TEAM, ACTIONS.UPDATE)) {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
     
@@ -86,12 +86,12 @@ export async function PUT(request, { params }) {
 // Ekip üyesini sil
 export async function DELETE(request, { params }) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(request);
     if (!session) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
     
-    if (!hasPermission(session, MODULES.TEAM, ACTIONS.DELETE)) {
+    if (!hasPermission(session.user, MODULES.TEAM, ACTIONS.DELETE)) {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
     
