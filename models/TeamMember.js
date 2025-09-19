@@ -1,4 +1,4 @@
-// models/TeamMember.js - Ekip Üyesi Modeli
+// models/TeamMember.js - Complete Ekip Üyesi Modeli
 import mongoose from 'mongoose';
 
 const educationSchema = new mongoose.Schema({
@@ -31,7 +31,7 @@ const teamMemberSchema = new mongoose.Schema({
   },
   position: {
     type: String,
-    enum: ['founding-partner', 'partner', 'senior-associate', 'associate', 'trainee'],
+    enum: ['founding-partner', 'managing-partner', 'lawyer', 'trainee-lawyer', 'legal-assistant'],
     required: true
   },
   bio: {
@@ -47,6 +47,10 @@ const teamMemberSchema = new mongoose.Schema({
   barAssociation: String,
   masterThesis: String,
   specialFocus: String,
+  internshipLocation: String,
+  publishedBook: String,
+  email: String,
+  phone: String,
   isActive: {
     type: Boolean,
     default: true
@@ -84,5 +88,11 @@ teamMemberSchema.pre('save', function(next) {
   next();
 });
 
-export default mongoose.models.TeamMember || mongoose.model('TeamMember', teamMemberSchema);
+// Index'ler
+teamMemberSchema.index({ slug: 1 });
+teamMemberSchema.index({ position: 1 });
+teamMemberSchema.index({ isActive: 1 });
+teamMemberSchema.index({ sortOrder: 1 });
+teamMemberSchema.index({ featuredOnHomepage: 1 });
 
+export default mongoose.models.TeamMember || mongoose.model('TeamMember', teamMemberSchema);

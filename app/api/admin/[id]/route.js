@@ -8,7 +8,7 @@ import { hasPermission, MODULES, ACTIONS } from '@/lib/permissions';
 // Tek ekip üyesini getir
 export async function GET(request, { params }) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(request);
     if (!session) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
