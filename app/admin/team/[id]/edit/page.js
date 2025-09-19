@@ -150,7 +150,7 @@ export default function EditTeamMember() {
     setErrors({});
     
     try {
-      const response = await fetch(`/api/admin/team/${params.id}`, {
+      const response = await fetch(`/api/admin/${params.id}`, {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -311,53 +311,54 @@ export default function EditTeamMember() {
   }, [formData.languages]);
 
   // Form submission
-  const handleSubmit = useCallback(async (e) => {
-    e.preventDefault();
-    
-    // Validate form
-    const formErrors = validateForm(formData);
-    if (Object.keys(formErrors).length > 0) {
-      setErrors(formErrors);
-      return;
+  // Form submission
+const handleSubmit = useCallback(async (e) => {
+  e.preventDefault();
+  
+  // Validate form
+  const formErrors = validateForm(formData);
+  if (Object.keys(formErrors).length > 0) {
+    setErrors(formErrors);
+    return;
+  }
+  
+  setLoading(true);
+  setErrors({});
+  setSuccess('');
+
+  try {
+    const response = await fetch(`/api/admin/${params.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(formData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || `HTTP ${response.status}: ${response.statusText}`);
     }
+
+    setSuccess('Ekip üyesi başarıyla güncellendi!');
+    setOriginalData(formData);
     
-    setLoading(true);
-    setErrors({});
-    setSuccess('');
-
-    try {
-      const response = await fetch(`/api/admin/team/${params.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      setSuccess('Ekip üyesi başarıyla güncellendi!');
-      setOriginalData(formData);
-      
-      // Redirect after 2 seconds
-      setTimeout(() => {
-        router.push('/admin/team');
-      }, 2000);
-      
-    } catch (error) {
-      console.error('Update error:', error);
-      setErrors({ 
-        general: error.message || 'Güncelleme sırasında bir hata oluştu' 
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [formData, params.id, router]);
+    // Redirect after 2 seconds
+    setTimeout(() => {
+      router.push('/admin/team');
+    }, 2000);
+    
+  } catch (error) {
+    console.error('Update error:', error);
+    setErrors({ 
+      general: error.message || 'Güncelleme sırasında bir hata oluştu' 
+    });
+  } finally {
+    setLoading(false);
+  }
+}, [formData, params.id, router]);
 
   // Loading state
   if (fetchLoading) {
@@ -513,7 +514,7 @@ export default function EditTeamMember() {
                     required
                     value={formData.name}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 ${
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black ${
                       errors.name ? 'border-red-300 bg-red-50' : 'border-gray-300'
                     }`}
                     placeholder="Av. Ahmet Yılmaz"
@@ -532,7 +533,7 @@ export default function EditTeamMember() {
                     required
                     value={formData.title}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 ${
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black ${
                       errors.title ? 'border-red-300 bg-red-50' : 'border-gray-300'
                     }`}
                     placeholder="Avukat"
@@ -552,7 +553,7 @@ export default function EditTeamMember() {
                       required
                       value={formData.slug}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 ${
+                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black ${
                         errors.slug ? 'border-red-300 bg-red-50' : 'border-gray-300'
                       }`}
                       placeholder="ahmet-yilmaz"
@@ -563,11 +564,11 @@ export default function EditTeamMember() {
                   </div>
                   <p className="mt-1 text-xs text-gray-500 flex items-center space-x-1">
                     <span>URL:</span>
-                    <code className="bg-gray-100 px-2 py-1 rounded text-xs">
+                    <code className="bg-gray-100 px-2 py-1 rounded text-xs text-black">
                       /ekibimiz/{formData.slug || 'slug'}
                     </code>
                   </p>
-                  {errors.slug && <p className="mt-1 text-sm text-red-600">{errors.slug}</p>}
+                  {errors.slug && <p className="mt-1 text-sm text-red-600 text-black">{errors.slug}</p>}
                 </div>
 
                 {/* Position */}
@@ -580,7 +581,7 @@ export default function EditTeamMember() {
                     required
                     value={formData.position}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 ${
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black ${
                       errors.position ? 'border-red-300 bg-red-50' : 'border-gray-300'
                     }`}
                   >
@@ -593,38 +594,45 @@ export default function EditTeamMember() {
                   {errors.position && <p className="mt-1 text-sm text-red-600">{errors.position}</p>}
                 </div>
 
-                {/* Image URL */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Profil Resmi URL
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="url"
-                      name="image"
-                      value={formData.image || ''}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
-                      placeholder="/images/team/ahmet-yilmaz.jpg"
-                    />
-                    <div className="absolute right-3 top-3">
-                      <Upload className="w-5 h-5 text-gray-400" />
-                    </div>
-                  </div>
-                  {formData.image && (
-                    <div className="mt-2 p-3 bg-gray-50 rounded-lg">
-                      <p className="text-xs text-gray-600 mb-2">Önizleme:</p>
-                      <img 
-                        src={formData.image} 
-                        alt="Preview" 
-                        className="w-16 h-16 rounded-lg object-cover border"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
+         {/* Image URL */}
+<div>
+  <label className="block text-sm font-semibold text-gray-700 mb-2">
+    Profil Resmi URL
+  </label>
+  <div className="relative">
+    <input
+      type="url"
+      name="image"
+      value={formData.image || ''}
+      onChange={handleInputChange}
+      tabIndex="-1"
+      onFocus={(e) => {
+        // Sadece otomatik focus'ı engelle, kullanıcı tıklaması değil
+        if (e.relatedTarget === null) {
+          e.target.blur();
+        }
+      }}
+      className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black"
+      placeholder="/images/team/ahmet-yilmaz.jpg"
+    />
+    <div className="absolute right-3 top-3">
+      <Upload className="w-5 h-5 text-gray-400" />
+    </div>
+  </div>
+  {formData.image && (
+    <div className="mt-2 p-3 bg-gray-50 rounded-lg">
+      <p className="text-xs text-gray-600 mb-2">Önizleme:</p>
+      <img 
+        src={formData.image} 
+        alt="Preview" 
+        className="w-16 h-16 rounded-lg object-cover border"
+        onError={(e) => {
+          e.target.style.display = 'none';
+        }}
+      />
+    </div>
+  )}
+</div>
 
                 {/* Sort Order */}
                 <div>
@@ -638,7 +646,7 @@ export default function EditTeamMember() {
                     max="999"
                     value={formData.sortOrder}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black"
                     placeholder="0"
                   />
                   <p className="mt-1 text-xs text-gray-500">Küçük sayılar önce gösterilir</p>
@@ -655,7 +663,7 @@ export default function EditTeamMember() {
                   rows={4}
                   value={formData.bio || ''}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black"
                   placeholder="Kısa biyografi yazın..."
                 />
                 <p className="mt-1 text-xs text-gray-500">
@@ -727,7 +735,7 @@ export default function EditTeamMember() {
                       max={new Date().getFullYear()}
                       value={formData.birthYear}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-3 pr-12 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 ${
+                      className={`w-full px-4 py-3 pr-12 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black ${
                         errors.birthYear ? 'border-red-300 bg-red-50' : 'border-gray-300'
                       }`}
                       placeholder="1990"
@@ -749,7 +757,7 @@ export default function EditTeamMember() {
                     name="birthPlace"
                     value={formData.birthPlace || ''}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black"
                     placeholder="İstanbul"
                   />
                 </div>
@@ -764,7 +772,7 @@ export default function EditTeamMember() {
                     name="barAssociation"
                     value={formData.barAssociation || ''}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black"
                     placeholder="Karabük Barosu"
                   />
                 </div>
@@ -781,7 +789,7 @@ export default function EditTeamMember() {
                     name="masterThesis"
                     value={formData.masterThesis || ''}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black"
                     placeholder="Tez konusu..."
                   />
                 </div>
@@ -796,7 +804,7 @@ export default function EditTeamMember() {
                     name="specialFocus"
                     value={formData.specialFocus || ''}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black"
                     placeholder="Özel uzmanlık alanı..."
                   />
                 </div>
@@ -812,7 +820,7 @@ export default function EditTeamMember() {
                       name="internshipLocation"
                       value={formData.internshipLocation || ''}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black"
                       placeholder="Staj yapılan büro..."
                     />
                   </div>
@@ -831,13 +839,13 @@ export default function EditTeamMember() {
             </div>
             
             <div className="p-6">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 text-black">
                 {SPECIALIZATION_OPTIONS.map((spec) => {
                   const isSelected = formData.specializations.includes(spec);
                   return (
                     <label
                       key={spec}
-                      className={`flex items-center p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-sm ${
+                      className={`flex items-center p-3 border-2 rounded-xl cursor-pointer transition-all duration-200 hover:shadow-sm text-black ${
                         isSelected
                           ? 'bg-amber-50 border-amber-300 text-amber-900 shadow-sm'
                           : 'bg-white border-gray-200 hover:border-gray-300'
@@ -847,7 +855,7 @@ export default function EditTeamMember() {
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleSpecialization(spec)}
-                        className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500 focus:ring-2 mr-3"
+                        className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500 focus:ring-2 mr-3 text-black"
                       />
                       <span className="text-sm font-medium select-none">{spec}</span>
                     </label>
@@ -875,7 +883,7 @@ export default function EditTeamMember() {
               <button
                 type="button"
                 onClick={addEducation}
-                className="inline-flex items-center space-x-2 px-4 py-2 bg-amber-600 text-white rounded-xl hover:bg-amber-700 transition-all duration-200 font-medium"
+                className="inline-flex items-center space-x-2 px-4 py-2 bg-amber-600 text-white rounded-xl hover:bg-amber-700 transition-all duration-200 font-medium text-black"
               >
                 <Plus className="w-4 h-4" />
                 <span>Eğitim Ekle</span>
@@ -891,7 +899,7 @@ export default function EditTeamMember() {
                       <button
                         type="button"
                         onClick={() => removeEducation(index)}
-                        className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-all duration-200"
+                        className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-all duration-200 text-black"
                       >
                         <X className="w-4 h-4" />
                       </button>
@@ -905,7 +913,7 @@ export default function EditTeamMember() {
                         <select
                           value={edu.degree || ''}
                           onChange={(e) => updateEducation(index, 'degree', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-black"
                         >
                           <option value="">Derece seçin</option>
                           {DEGREE_OPTIONS.map(degree => (
@@ -922,7 +930,7 @@ export default function EditTeamMember() {
                           type="text"
                           value={edu.institution || ''}
                           onChange={(e) => updateEducation(index, 'institution', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-black"
                           placeholder="Üniversite/Kurum adı"
                         />
                       </div>
@@ -935,7 +943,7 @@ export default function EditTeamMember() {
                           type="text"
                           value={edu.year || ''}
                           onChange={(e) => updateEducation(index, 'year', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-black"
                           placeholder="2020-2024"
                         />
                       </div>
@@ -949,7 +957,7 @@ export default function EditTeamMember() {
                         rows={2}
                         value={edu.description || ''}
                         onChange={(e) => updateEducation(index, 'description', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-black"
                         placeholder="Ek bilgiler..."
                       />
                     </div>
@@ -965,7 +973,7 @@ export default function EditTeamMember() {
                     <button
                       type="button"
                       onClick={addEducation}
-                      className="mt-4 inline-flex items-center space-x-2 px-4 py-2 text-amber-600 hover:text-amber-700 font-medium"
+                      className="mt-4 inline-flex items-center space-x-2 px-4 py-2 text-amber-600 hover:text-amber-700 font-medium text-black"
                     >
                       <Plus className="w-4 h-4" />
                       <span>İlk eğitimi ekle</span>
@@ -988,7 +996,7 @@ export default function EditTeamMember() {
               <button
                 type="button"
                 onClick={addCertificate}
-                className="inline-flex items-center space-x-2 px-4 py-2 bg-amber-600 text-white rounded-xl hover:bg-amber-700 transition-all duration-200 font-medium"
+                className="inline-flex items-center space-x-2 px-4 py-2 bg-amber-600 text-white rounded-xl hover:bg-amber-700 transition-all duration-200 font-medium text-black"
               >
                 <Plus className="w-4 h-4" />
                 <span>Sertifika Ekle</span>
@@ -1075,7 +1083,7 @@ export default function EditTeamMember() {
                   name="seoTitle"
                   value={formData.seoTitle || ''}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black"
                   placeholder="SEO için özelleştirilmiş başlık..."
                 />
               </div>
@@ -1089,7 +1097,7 @@ export default function EditTeamMember() {
                   rows={3}
                   value={formData.seoDescription || ''}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black"
                   placeholder="Arama motorları için açıklama..."
                 />
                 <p className="mt-1 text-xs text-gray-500">
@@ -1105,7 +1113,7 @@ export default function EditTeamMember() {
               <div className="flex items-center space-x-4">
                 <Link
                   href="/admin/team"
-                  className="inline-flex items-center space-x-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium"
+                  className="inline-flex items-center space-x-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium text-black"
                 >
                   <span>İptal</span>
                 </Link>
