@@ -312,12 +312,17 @@ export default function EditTeamMember() {
 
   // Form submission
   // Form submission
+// Form submission - TAMAMEN DÜZELTİLMİŞ VERSİYON
 const handleSubmit = useCallback(async (e) => {
   e.preventDefault();
+  
+  console.log('🔄 Form submit başlatıldı');
+  console.log('📝 Form Data:', formData);
   
   // Validate form
   const formErrors = validateForm(formData);
   if (Object.keys(formErrors).length > 0) {
+    console.log('❌ Validation errors:', formErrors);
     setErrors(formErrors);
     return;
   }
@@ -327,6 +332,8 @@ const handleSubmit = useCallback(async (e) => {
   setSuccess('');
 
   try {
+    console.log('📡 API çağrısı başlatılıyor...');
+    
     const response = await fetch(`/api/admin/${params.id}`, {
       method: 'PUT',
       headers: {
@@ -336,27 +343,38 @@ const handleSubmit = useCallback(async (e) => {
       body: JSON.stringify(formData),
     });
 
+    console.log('📡 API Response Status:', response.status);
+    
     const data = await response.json();
+    console.log('📡 API Response Data:', data);
 
     if (!response.ok) {
       throw new Error(data.message || `HTTP ${response.status}: ${response.statusText}`);
     }
 
+    console.log('✅ Güncelleme başarılı!');
     setSuccess('Ekip üyesi başarıyla güncellendi!');
-    setOriginalData(formData);
+    setOriginalData(formData); // Original data'yı güncelle
+    
+    // Focus'ı temizle
+    if (document.activeElement && document.activeElement.blur) {
+      document.activeElement.blur();
+    }
     
     // Redirect after 2 seconds
     setTimeout(() => {
+      console.log('🔄 Redirect ediliyor...');
       router.push('/admin/team');
     }, 2000);
     
   } catch (error) {
-    console.error('Update error:', error);
+    console.error('❌ Update error:', error);
     setErrors({ 
       general: error.message || 'Güncelleme sırasında bir hata oluştu' 
     });
   } finally {
     setLoading(false);
+    console.log('🏁 Form submit tamamlandı');
   }
 }, [formData, params.id, router]);
 
@@ -491,7 +509,7 @@ const handleSubmit = useCallback(async (e) => {
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-8">
+<form onSubmit={handleSubmit} noValidate className="space-y-8">
           
           {/* Basic Information */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -511,7 +529,6 @@ const handleSubmit = useCallback(async (e) => {
                   <input
                     type="text"
                     name="name"
-                    required
                     value={formData.name}
                     onChange={handleInputChange}
                     className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black ${
@@ -530,7 +547,6 @@ const handleSubmit = useCallback(async (e) => {
                   <input
                     type="text"
                     name="title"
-                    required
                     value={formData.title}
                     onChange={handleInputChange}
                     className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black ${
@@ -550,7 +566,6 @@ const handleSubmit = useCallback(async (e) => {
                     <input
                       type="text"
                       name="slug"
-                      required
                       value={formData.slug}
                       onChange={handleInputChange}
                       className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black ${
@@ -578,7 +593,6 @@ const handleSubmit = useCallback(async (e) => {
                   </label>
                   <select
                     name="position"
-                    required
                     value={formData.position}
                     onChange={handleInputChange}
                     className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black ${
@@ -594,24 +608,16 @@ const handleSubmit = useCallback(async (e) => {
                   {errors.position && <p className="mt-1 text-sm text-red-600">{errors.position}</p>}
                 </div>
 
-         {/* Image URL */}
-<div>
+        <div>
   <label className="block text-sm font-semibold text-gray-700 mb-2">
     Profil Resmi URL
   </label>
   <div className="relative">
     <input
-      type="url"
+      type="text"  // url yerine text
       name="image"
       value={formData.image || ''}
       onChange={handleInputChange}
-      tabIndex="-1"
-      onFocus={(e) => {
-        // Sadece otomatik focus'ı engelle, kullanıcı tıklaması değil
-        if (e.relatedTarget === null) {
-          e.target.blur();
-        }
-      }}
       className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-black"
       placeholder="/images/team/ahmet-yilmaz.jpg"
     />

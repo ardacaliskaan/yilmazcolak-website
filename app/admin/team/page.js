@@ -115,14 +115,12 @@ export default function AdminTeamManagement() {
     setActionLoading(prev => ({ ...prev, [memberId]: true }));
     
     try {
-      const response = await fetch(`/api/admin/team/${memberId}`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ isActive: !currentStatus }),
-      });
+     const response = await fetch(`/api/admin/${memberId}`, {
+  method: 'PUT',
+  credentials: 'include',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ isActive: true }),
+});
 
       if (response.ok) {
         await fetchMembers();
@@ -180,38 +178,38 @@ export default function AdminTeamManagement() {
     setSortDirection('asc');
   };
 
-  const handleBulkAction = async (action) => {
-    if (selectedMembers.length === 0) return;
+ const handleBulkAction = async (action) => {
+  if (selectedMembers.length === 0) return;
 
-    try {
-      const promises = selectedMembers.map(memberId => {
-        switch (action) {
-          case 'activate':
-            return fetch(`/api/admin/team/${memberId}`, {
-              method: 'PUT',
-              credentials: 'include',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ isActive: true }),
-            });
-          case 'deactivate':
-            return fetch(`/api/admin/team/${memberId}`, {
-              method: 'PUT',
-              credentials: 'include',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ isActive: false }),
-            });
-          default:
-            return Promise.resolve();
-        }
-      });
+  try {
+    const promises = selectedMembers.map(memberId => {
+      switch (action) {
+        case 'activate':
+          return fetch(`/api/admin/${memberId}`, { // team/ kaldırıldı
+            method: 'PUT',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isActive: true }),
+          });
+        case 'deactivate':
+          return fetch(`/api/admin/${memberId}`, { // team/ kaldırıldı
+            method: 'PUT',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isActive: false }),
+          });
+        default:
+          return Promise.resolve();
+      }
+    });
 
-      await Promise.all(promises);
-      await fetchMembers();
-      setSelectedMembers([]);
-    } catch (error) {
-      console.error('Bulk action error:', error);
-    }
-  };
+    await Promise.all(promises);
+    await fetchMembers();
+    setSelectedMembers([]);
+  } catch (error) {
+    console.error('Bulk action error:', error);
+  }
+};
 
   // Team Member Card Component
   const TeamMemberCard = ({ member }) => {
