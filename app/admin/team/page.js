@@ -138,7 +138,7 @@ export default function AdminTeamManagement() {
     setActionLoading(prev => ({ ...prev, [memberId]: true }));
     
     try {
-      const response = await fetch(`/api/admin/team/${memberId}`, {
+      const response = await fetch(`/api/admin/${memberId}`, {
         method: 'DELETE',
         credentials: 'include',
         headers: {
@@ -147,14 +147,26 @@ export default function AdminTeamManagement() {
       });
 
       if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Silme başarılı:', result.message);
+        
+        // Listeyi yenile
         await fetchMembers();
+        
+        // Modal'ı kapat
         setShowDeleteModal(false);
         setMemberToDelete(null);
+        
+        // Seçili elemanları temizle
+        setSelectedMembers(prev => prev.filter(id => id !== memberId));
       } else {
-        console.error('Delete failed:', response.status);
+        const errorData = await response.json();
+        console.error('❌ Silme hatası:', response.status, errorData.message);
+        alert(`Silme işlemi başarısız: ${errorData.message || 'Bilinmeyen hata'}`);
       }
     } catch (error) {
-      console.error('Delete error:', error);
+      console.error('❌ Network hatası:', error);
+      alert('Ağ hatası oluştu. Lütfen tekrar deneyin.');
     } finally {
       setActionLoading(prev => ({ ...prev, [memberId]: false }));
     }
