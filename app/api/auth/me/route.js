@@ -1,4 +1,4 @@
-// app/api/auth/me/route.js - Güvenlik Güçlendirilmiş
+// app/api/auth/me/route.js - Complete Working Version
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import User from '@/models/User';
@@ -8,7 +8,6 @@ export async function GET(request) {
   try {
     console.log('🔍 Auth check request received');
     
-    // Cookie'den token al
     const token = request.cookies.get('admin-token')?.value;
     
     if (!token) {
@@ -17,11 +16,17 @@ export async function GET(request) {
     }
 
     // Token'ı doğrula
-    const decoded = verifyToken(token);
+    const decoded = await verifyToken(token);
     if (!decoded) {
       console.log('❌ Invalid token');
       return createUnauthorizedResponse('Geçersiz token');
     }
+    
+    console.log('✅ Token decoded successfully:', {
+      userId: decoded.userId,
+      email: decoded.email,
+      role: decoded.role
+    });
     
     // Token expiry kontrolü
     const currentTime = Math.floor(Date.now() / 1000);
@@ -35,8 +40,10 @@ export async function GET(request) {
     
     // Kullanıcıyı veritabanından getir
     const user = await User.findById(decoded.userId)
-      .select('-password') // Password'u exclude et
-      .lean(); // Performance için lean query
+      .select('-password')
+      .lean();
+    
+    console.log('🔍 Database query result:', user ? 'FOUND' : 'NOT FOUND');
     
     if (!user) {
       console.log('❌ User not found in database');
@@ -48,15 +55,9 @@ export async function GET(request) {
       return createUnauthorizedResponse('Hesap devre dışı');
     }
     
-    // Token'daki user data ile DB'deki data uyumlu mu kontrol et
-    if (user.email !== decoded.email || user.role !== decoded.role) {
-      console.log('❌ Token data mismatch with database');
-      return createUnauthorizedResponse('Token verisi uyumsuz');
-    }
-    
     console.log(`✅ Auth successful for user: ${user.name} (${user.role})`);
     
-    // Successful response
+    // SUCCESS RESPONSE - Bu eksikti!
     const response = NextResponse.json({
       user: {
         id: user._id,
@@ -78,7 +79,7 @@ export async function GET(request) {
       timestamp: new Date().toISOString()
     });
     
-    // Cache control headers - Auth bilgisi cache'lenmemeli
+    // Cache control headers
     setCacheHeaders(response);
     
     return response;
@@ -95,22 +96,12 @@ export async function GET(request) {
       return createUnauthorizedResponse('Token süresi dolmuş');
     }
     
-    if (error.name === 'NotBeforeError') {
-      return createUnauthorizedResponse('Token henüz geçerli değil');
-    }
-    
-    // Database connection errors
-    if (error.name === 'MongooseError' || error.name === 'MongoError') {
-      console.error('Database connection error:', error);
-      return createServerErrorResponse('Veritabanı bağlantı hatası');
-    }
-    
     // Generic server error
     return createServerErrorResponse('Sunucu hatası');
   }
 }
 
-// 401 Unauthorized response helper
+// Helper functions
 function createUnauthorizedResponse(message) {
   const response = NextResponse.json({ 
     message,
@@ -122,7 +113,6 @@ function createUnauthorizedResponse(message) {
   return response;
 }
 
-// 500 Server Error response helper
 function createServerErrorResponse(message) {
   const response = NextResponse.json({ 
     message,
@@ -134,32 +124,12 @@ function createServerErrorResponse(message) {
   return response;
 }
 
-// Cache control headers
 function setCacheHeaders(response) {
-  // Prevent caching of auth responses
   response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private, max-age=0');
   response.headers.set('Pragma', 'no-cache');
   response.headers.set('Expires', '0');
-  
-  // Security headers
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-XSS-Protection', '1; mode=block');
-  
-  // CORS headers (if needed)
-  response.headers.set('Access-Control-Allow-Credentials', 'true');
-  
-  return response;
-}
-
-// OPTIONS method for CORS preflight
-export async function OPTIONS(request) {
-  const response = new NextResponse(null, { status: 200 });
-  
-  response.headers.set('Access-Control-Allow-Origin', '*');
-  response.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  response.headers.set('Access-Control-Allow-Credentials', 'true');
-  
   return response;
 }

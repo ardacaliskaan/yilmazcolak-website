@@ -1,66 +1,54 @@
-// middleware.js - Güvenlik Güçlendirilmiş
+// middleware.js - Jose Library ile Edge Runtime Uyumlu
 import { NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { verifyTokenEdge } from './lib/auth';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
-
-export function middleware(request) {
+export async function middleware(request) {
   const { pathname } = request.nextUrl;
   
-  // Admin path'i değilse middleware'i atla
   if (!pathname.startsWith('/admin')) {
     return NextResponse.next();
   }
 
   const token = request.cookies.get('admin-token')?.value;
   
-  console.log(`Middleware check: ${pathname}, token: ${token ? 'exists' : 'none'}`);
+  console.log(`Middleware: ${pathname}, token: ${token ? 'exists' : 'none'}`);
 
-  // Login sayfası: token varsa ve geçerliyse dashboard'a yönlendir
+  // Login sayfası
   if (pathname === '/admin/login') {
     if (token) {
       try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const currentTime = Math.floor(Date.now() / 1000);
-        
-        if (decoded.exp && decoded.exp > currentTime) {
-          console.log('Valid token found, redirecting to dashboard');
+        const decoded = await verifyTokenEdge(token);
+        if (decoded && decoded.exp > Math.floor(Date.now() / 1000)) {
+          console.log('Valid token, redirecting to dashboard');
           return NextResponse.redirect(new URL('/admin/dashboard', request.url));
-        } else {
-          console.log('Expired token found, allowing login page');
         }
       } catch (error) {
-        console.log('Invalid token found, allowing login page');
+        console.log('Token verification failed');
       }
     }
     return NextResponse.next();
   }
 
-  // Logout sayfası: token kontrolü yapmadan geç
+  // Logout sayfası
   if (pathname === '/admin/logout') {
     return NextResponse.next();
   }
 
-  // Diğer tüm admin sayfaları: token kontrolü
+  // Diğer admin sayfaları - token kontrolü
   if (!token) {
     console.log('No token, redirecting to login');
     return NextResponse.redirect(new URL('/admin/login', request.url));
   }
 
-  // Token geçerliliğini kontrol et
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const currentTime = Math.floor(Date.now() / 1000);
-    
-    // Token süresi dolmuş mu?
-    if (decoded.exp && decoded.exp < currentTime) {
-      console.log('Token expired, redirecting to login');
+    const decoded = await verifyTokenEdge(token);
+    if (!decoded || decoded.exp <= Math.floor(Date.now() / 1000)) {
+      console.log('Invalid/expired token, clearing and redirecting');
       
-      // Expired token'ı temizle
       const response = NextResponse.redirect(new URL('/admin/login', request.url));
       response.cookies.set('admin-token', '', {
         httpOnly: true,
-        secure: request.url.startsWith('https:'),
+        secure: true,
         sameSite: 'lax',
         path: '/',
         maxAge: 0
@@ -68,18 +56,16 @@ export function middleware(request) {
       return response;
     }
     
-    // Token geçerli, devam et
-    console.log(`Valid token for user: ${decoded.email}`);
+    console.log(`Valid access for: ${decoded.email}`);
     return NextResponse.next();
     
   } catch (error) {
-    console.log('Invalid token, redirecting to login:', error.message);
+    console.log('Token validation error:', error.message);
     
-    // Invalid token'ı temizle
     const response = NextResponse.redirect(new URL('/admin/login', request.url));
     response.cookies.set('admin-token', '', {
       httpOnly: true,
-      secure: request.url.startsWith('https:'),
+      secure: true,
       sameSite: 'lax',
       path: '/',
       maxAge: 0
