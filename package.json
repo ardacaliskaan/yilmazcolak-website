@@ -7,6 +7,8 @@
     "create-admin": "node scripts/createSuperAdmin.js",
     "migrate-team": "node scripts/migrateTeamData.js",
         "reset-admin": "node scripts/resetAdmin.js",
+            "seed:permissions": "node scripts/seedPermissions.js",
+
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start -p 3001",
