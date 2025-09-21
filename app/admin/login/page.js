@@ -1,181 +1,335 @@
-// app/admin/login/page.js - Admin Login Sayfası
+// app/admin/login/page.js - Modern Admin Login Sayfası
 'use client';
 
-import { useState } from 'react';
-import { Eye, EyeOff, Lock, Mail, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { 
+  Eye, 
+  EyeOff, 
+  Lock, 
+  Mail, 
+  AlertCircle, 
+  CheckCircle,
+  User,
+  Shield,
+  LogIn,
+  Loader2
+} from 'lucide-react';
 
 export default function AdminLogin() {
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const router = useRouter();
+  const [formData, setFormData] = useState({ 
+    email: '', 
+    password: '',
+    rememberMe: false 
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
+  const [mounted, setMounted] = useState(false);
+
+  // Component mount kontrolü
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Form validation
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email adresi gereklidir';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Geçerli bir email adresi giriniz';
+    }
+    
+    if (!formData.password) {
+      newErrors.password = 'Şifre gereklidir';
+    } else if (formData.password.length < 3) {
+      newErrors.password = 'Şifre en az 3 karakter olmalıdır';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     setIsLoading(true);
     setError('');
+    setErrors({});
 
     try {
-      console.log('[LOGIN] gönderilen form:', formData);
+      console.log('[LOGIN] Giriş denemesi:', { 
+        email: formData.email,
+        rememberMe: formData.rememberMe 
+      });
 
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Cookie gelsin
+        credentials: 'include',
         body: JSON.stringify({
           email: formData.email.trim().toLowerCase(),
           password: formData.password,
+          rememberMe: formData.rememberMe
         }),
       });
 
       const data = await res.json().catch(() => ({}));
-      console.log('[LOGIN] response:', res.status, data);
+      console.log('[LOGIN] Response:', res.status, data);
 
       if (res.ok) {
-        // 100ms bekle → cookie kesin yazılsın
-        await new Promise((r) => setTimeout(r, 100));
+        // Success feedback
+        setError('');
+        
+        // Cookie'nin yazılmasını bekle
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        
+        // Dashboard'a yönlendir
         window.location.href = '/admin/dashboard';
       } else {
-        setError(data.message || 'Geçersiz email ya da şifre');
+        // Error handling
+        if (res.status === 401) {
+          setError('Email veya şifre hatalı');
+        } else if (res.status === 403) {
+          setError('Hesabınız devre dışı bırakılmış');
+        } else if (res.status === 429) {
+          setError('Çok fazla deneme yapıldı. Lütfen bekleyiniz');
+        } else {
+          setError(data.message || 'Giriş yapılırken bir hata oluştu');
+        }
       }
     } catch (err) {
-      console.error('[LOGIN] hata:', err);
-      setError('Sunucuya bağlanırken hata oluştu');
+      console.error('[LOGIN] Network error:', err);
+      setError('Sunucuya bağlanırken hata oluştu. İnternet bağlantınızı kontrol ediniz');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: type === 'checkbox' ? checked : value,
     }));
+    
+    // Clear field error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+    
+    // Clear general error
+    if (error) {
+      setError('');
+    }
   };
 
+  // Loading state için early return
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-      {/* Arkaplan */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-600/10 to-orange-600/10"></div>
-        <div
-          className="absolute inset-0"
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+      
+      {/* Background Pattern */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-blue-100/30 to-transparent rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-to-tl from-purple-100/30 to-transparent rounded-full blur-3xl"></div>
+        <div 
+          className="absolute inset-0 opacity-[0.02]"
           style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.1) 1px, transparent 0)`,
-            backgroundSize: '30px 30px',
+            backgroundImage: `radial-gradient(circle at 1px 1px, rgba(59, 130, 246, 0.5) 1px, transparent 0)`,
+            backgroundSize: '24px 24px',
           }}
         ></div>
       </div>
 
-      {/* Kart */}
+      {/* Login Card */}
       <div className="relative w-full max-w-md">
-        <div className="bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl p-8 border border-white/20">
-          {/* Logo & Başlık */}
+        {/* Card */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 p-8">
+          
+          {/* Logo & Header */}
           <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Lock className="w-10 h-10 text-white" />
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Shield className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">Admin Panel</h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Admin Panel</h1>
             <p className="text-gray-600">Yılmaz Çolak Hukuk Bürosu</p>
           </div>
 
-          {/* Hata Mesajı */}
+          {/* Error Message */}
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center space-x-3">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-              <p className="text-red-700 text-sm">{error}</p>
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start space-x-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-red-800 text-sm font-medium">Giriş Hatası</p>
+                <p className="text-red-700 text-sm">{error}</p>
+              </div>
             </div>
           )}
 
-          {/* Form */}
+          {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email */}
+            
+            {/* Email Field */}
             <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                E-posta Adresi
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email Adresi
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                </div>
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   id="email"
                   name="email"
                   type="email"
-                  required
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors duration-200 bg-white/80 text-black"
+                  className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                    errors.email 
+                      ? 'border-red-300 bg-red-50' 
+                      : 'border-gray-300 bg-white/70'
+                  }`}
                   placeholder="admin@example.com"
+                  disabled={isLoading}
                 />
               </div>
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {errors.email}
+                </p>
+              )}
             </div>
 
-            {/* Şifre */}
+            {/* Password Field */}
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Şifre
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
-                </div>
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   id="password"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
-                  required
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors duration-200 bg-white/80 text-black"
+                  className={`w-full pl-10 pr-12 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                    errors.password 
+                      ? 'border-red-300 bg-red-50' 
+                      : 'border-gray-300 bg-white/70'
+                  }`}
                   placeholder="••••••••"
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  disabled={isLoading}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    <EyeOff className="w-5 h-5" />
                   ) : (
-                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    <Eye className="w-5 h-5" />
                   )}
                 </button>
               </div>
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {errors.password}
+                </p>
+              )}
             </div>
 
-            {/* Buton */}
+            {/* Remember Me */}
+            <div className="flex items-center justify-between">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="rememberMe"
+                  checked={formData.rememberMe}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                  className="sr-only"
+                />
+                <div className={`relative w-5 h-5 rounded border-2 transition-colors ${
+                  formData.rememberMe 
+                    ? 'bg-blue-500 border-blue-500' 
+                    : 'border-gray-300 bg-white'
+                }`}>
+                  {formData.rememberMe && (
+                    <CheckCircle className="w-3 h-3 text-white absolute top-0.5 left-0.5" />
+                  )}
+                </div>
+                <span className="ml-2 text-sm text-gray-700">Beni hatırla</span>
+              </label>
+              
+              <button
+                type="button"
+                className="text-sm text-blue-600 hover:text-blue-700 transition-colors"
+                disabled={isLoading}
+              >
+                Şifremi unuttum
+              </button>
+            </div>
+
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={isLoading}
-              className={`w-full py-3 px-4 rounded-xl font-semibold text-white transition-all duration-200 ${
+              className={`w-full py-3 px-4 rounded-xl font-semibold text-white transition-all duration-200 flex items-center justify-center gap-2 ${
                 isLoading
                   ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 active:scale-[0.98]'
+                  : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 active:scale-[0.98] shadow-lg hover:shadow-xl'
               }`}
             >
               {isLoading ? (
-                <div className="flex items-center justify-center space-x-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Giriş yapılıyor...</span>
-                </div>
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Giriş yapılıyor...
+                </>
               ) : (
-                'Giriş Yap'
+                <>
+                  <LogIn className="w-5 h-5" />
+                  Giriş Yap
+                </>
               )}
             </button>
           </form>
 
           {/* Footer */}
           <div className="mt-8 pt-6 border-t border-gray-200">
-            <p className="text-center text-xs text-gray-500">
-              © 2025 Yılmaz Çolak Hukuk Bürosu
-            </p>
+            <div className="text-center">
+              <p className="text-xs text-gray-500 mb-3">
+                Bu panel sadece yetkili personel içindir
+              </p>
+              <div className="flex items-center justify-center gap-4 text-xs text-gray-400">
+                <span className="flex items-center gap-1">
+                  <User className="w-3 h-3" />
+                  Güvenli Giriş
+                </span>
+                <span className="flex items-center gap-1">
+                  <Shield className="w-3 h-3" />
+                  SSL Korumalı
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
