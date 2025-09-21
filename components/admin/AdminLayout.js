@@ -170,20 +170,22 @@ const handleLogout = async () => {
     setMenuItems([]);
     setUserMenuOpen(false);
     
-    // Local storage'ı temizle
+    // Storage'ı temizle
     if (typeof window !== 'undefined') {
-      localStorage.clear();
-      sessionStorage.clear();
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch (error) {
+        console.warn('Storage clear error:', error);
+      }
     }
     
-    // Logout sayfasına yönlendir (logout sayfası API çağrısını yapacak)
-    router.push('/admin/logout');
+    // Logout sayfasına yönlendir
+    window.location.replace('/admin/logout');
     
   } catch (error) {
     console.error('Logout error:', error);
-    
-    // Hata durumunda force redirect
-    window.location.href = '/admin/login';
+    window.location.replace('/admin/login');
   }
 };
 

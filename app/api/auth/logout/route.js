@@ -1,4 +1,4 @@
-// app/api/auth/logout/route.js - Güvenlik Güçlendirilmiş
+// app/api/auth/logout/route.js - Düzeltilmiş Versiyon
 import { NextResponse } from "next/server";
 
 export async function POST(request) {
@@ -11,27 +11,23 @@ export async function POST(request) {
       timestamp: new Date().toISOString()
     });
     
-    // Protokol kontrolü
-    const isHttps = new URL(request.url).protocol === "https:";
-    
-    // Ana cookie'yi sil
+    // ⚠️ ÖNEMLİ: Login ile aynı ayarları kullan
     response.cookies.set("admin-token", "", {
       httpOnly: true,
-      secure: isHttps,
+      secure: true,        // 👈 Login'deki gibi her zaman true
       sameSite: "lax",
       path: "/",
-      domain: undefined, // Current domain kullan
+      // domain eklenmez (login'de de yok)
       maxAge: 0,
-      expires: new Date(0) // Past date
+      expires: new Date(0)
     });
     
-    // Backup cookie silme (farklı path'ler için)
+    // Backup temizleme (admin path için)
     response.cookies.set("admin-token", "", {
       httpOnly: true,
-      secure: isHttps,
+      secure: true,
       sameSite: "lax",
       path: "/admin",
-      domain: undefined,
       maxAge: 0,
       expires: new Date(0)
     });
@@ -54,11 +50,10 @@ export async function POST(request) {
       error: true 
     }, { status: 500 });
     
-    const isHttps = new URL(request.url).protocol === "https:";
-    
+    // Hata durumunda da aynı ayarları kullan
     response.cookies.set("admin-token", "", {
       httpOnly: true,
-      secure: isHttps,
+      secure: true,
       sameSite: "lax",
       path: "/",
       maxAge: 0,
@@ -69,7 +64,7 @@ export async function POST(request) {
   }
 }
 
-// GET method'u da ekle (bazı durumlarda kullanılabilir)
+// GET method'u da ekle
 export async function GET(request) {
   return POST(request);
 }
