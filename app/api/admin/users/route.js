@@ -1,4 +1,4 @@
-// app/api/admin/users/route.js - Dinamik Yetki Sistemi ile Güncellenmiş
+// app/api/admin/users/route.js - Tamamen Yeni
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import User from '@/models/User';
@@ -13,10 +13,7 @@ export async function GET(request) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
     
-    // ❌ Eski: static permission check
-    // if (!hasPermission(session.user, MODULES.USERS, ACTIONS.READ)) {
-    
-    // ✅ Yeni: dinamik permission check
+    // Dinamik yetki kontrolü
     if (!(await hasPermission(session.user, 'users', 'read'))) {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
@@ -25,7 +22,7 @@ export async function GET(request) {
     
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page')) || 1;
-    const limit = parseInt(searchParams.get('limit')) || 10;
+    const limit = parseInt(searchParams.get('limit')) || 12;
     const search = searchParams.get('search') || '';
     const role = searchParams.get('role');
     const active = searchParams.get('active');
@@ -62,6 +59,8 @@ export async function GET(request) {
       User.countDocuments(query)
     ]);
     
+    console.log(`📄 ${users.length} kullanıcı getiriliyor (total: ${total})`);
+    
     return NextResponse.json({
       users,
       pagination: {
@@ -86,17 +85,65 @@ export async function POST(request) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
     
-    // ✅ Dinamik yetki kontrolü
+    // Dinamik yetki kontrolü
     if (!(await hasPermission(session.user, 'users', 'create'))) {
       return NextResponse.json({ message: 'Forbidden' }, { status: 403 });
     }
     
     await dbConnect();
     
-    const { name, email, password, role, customPermissions, isActive = true } = await request.json();
+    const body = await request.json();
+    const { name, email, password, role, permissions, isActive = true } = body;
     
-    // Email kontrolü
-    const existingUser = await User.findOne({ email });
+    console.log('📝 User create request:', { 
+      name, 
+      email, 
+      role, 
+      isActive, 
+      permissionsCount: permissions?.length,
+      sessionUser: session.user.name 
+    });
+    
+    // Validation
+    if (!name || !name.trim()) {
+      return NextResponse.json(
+        { message: 'İsim gereklidir' },
+        { status: 400 }
+      );
+    }
+    
+    if (!email || !email.trim()) {
+      return NextResponse.json(
+        { message: 'Email gereklidir' },
+        { status: 400 }
+      );
+    }
+    
+    if (!password || password.length < 6) {
+      return NextResponse.json(
+        { message: 'Şifre en az 6 karakter olmalıdır' },
+        { status: 400 }
+      );
+    }
+    
+    if (!role) {
+      return NextResponse.json(
+        { message: 'Rol gereklidir' },
+        { status: 400 }
+      );
+    }
+    
+    // Email format kontrolü
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { message: 'Geçerli bir email adresi giriniz' },
+        { status: 400 }
+      );
+    }
+    
+    // Email uniqueness kontrolü
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return NextResponse.json(
         { message: 'Bu email adresi zaten kullanımda' },
@@ -106,25 +153,41 @@ export async function POST(request) {
     
     // Kullanıcı nesnesi oluştur
     const userData = {
-      name,
-      email,
-      password,
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      password: password.trim(),
       role,
       isActive,
       createdBy: session.user.id
     };
     
-    // ✅ Dinamik yetki ataması
+    // Dinamik yetki ataması
     let finalPermissions = [];
     
-    if (customPermissions && customPermissions.length > 0) {
-      // Custom permissions verilmişse onu kullan
-      finalPermissions = customPermissions;
-      console.log(`👤 ${name} için custom permissions kullanılıyor: ${customPermissions.length} modül`);
+    if (permissions && Array.isArray(permissions) && permissions.length > 0) {
+      // Frontend'ten gelen permissions kullan
+      finalPermissions = permissions;
+      console.log(`👤 ${name} için custom permissions kullanılıyor: ${permissions.length} modül`);
+      
+      // Custom permissions'ları logla
+      permissions.forEach(perm => {
+        console.log(`   📋 ${perm.module}: [${perm.actions.join(', ')}]`);
+      });
     } else {
-      // Otomatik yetki ataması (dinamik sistem)
-      finalPermissions = await assignDefaultPermissions({ role });
-      console.log(`🤖 ${name} (${role}) için otomatik permissions: ${finalPermissions.length} modül`);
+      // Otomatik yetki ataması (rol bazlı)
+      try {
+        finalPermissions = await assignDefaultPermissions({ role });
+        console.log(`🤖 ${name} (${role}) için otomatik permissions: ${finalPermissions.length} modül`);
+        
+        // Otomatik atanan yetkileri logla
+        finalPermissions.forEach(perm => {
+          console.log(`   🔄 ${perm.module}: [${perm.actions.join(', ')}]`);
+        });
+      } catch (permError) {
+        console.error('Permission assignment error:', permError);
+        // Fallback - boş permissions ile devam et
+        finalPermissions = [];
+      }
     }
     
     userData.permissions = finalPermissions;
@@ -135,13 +198,9 @@ export async function POST(request) {
     // Password'u çıkar
     const { password: _, ...userWithoutPassword } = user.toObject();
     
-    console.log(`✅ Yeni kullanıcı oluşturuldu: ${user.name} (${user.role})`);
+    console.log(`✅ Yeni kullanıcı oluşturuldu: ${user.name} (${user.role}) - ID: ${user._id}`);
     console.log(`🔐 Toplam ${finalPermissions.length} modül yetkisi atandı`);
-    
-    // Atanan yetkileri detaylı logla
-    finalPermissions.forEach(perm => {
-      console.log(`   • ${perm.module}: [${perm.actions.join(', ')}]`);
-    });
+    console.log(`👤 Oluşturan: ${session.user.name} (${session.user.role})`);
     
     return NextResponse.json({
       message: 'Kullanıcı başarıyla oluşturuldu',
@@ -150,12 +209,48 @@ export async function POST(request) {
     
   } catch (error) {
     console.error('User create error:', error);
+    
+    // MongoDB duplicate key error
     if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern || {})[0] || 'field';
       return NextResponse.json(
-        { message: 'Bu email adresi zaten kullanımda' },
+        { message: `Bu ${field} zaten kullanımda` },
         { status: 400 }
       );
     }
-    return NextResponse.json({ message: 'Server error' }, { status: 500 });
+    
+    // Validation errors
+    if (error.name === 'ValidationError') {
+      const errors = {};
+      Object.keys(error.errors).forEach((key) => {
+        errors[key] = error.errors[key].message;
+      });
+      return NextResponse.json(
+        { message: 'Validation hatası', errors },
+        { status: 400 }
+      );
+    }
+    
+    // CastError (invalid ObjectId)
+    if (error.name === 'CastError') {
+      return NextResponse.json(
+        { message: 'Geçersiz veri formatı' },
+        { status: 400 }
+      );
+    }
+    
+    // Password hashing errors
+    if (error.message && error.message.includes('password')) {
+      return NextResponse.json(
+        { message: 'Şifre işlenirken hata oluştu' },
+        { status: 400 }
+      );
+    }
+    
+    // Generic server error
+    return NextResponse.json(
+      { message: 'Kullanıcı oluşturulurken bir hata oluştu' }, 
+      { status: 500 }
+    );
   }
 }

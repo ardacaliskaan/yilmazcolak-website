@@ -34,7 +34,7 @@ const userSchema = new mongoose.Schema({
     },
     actions: [{
       type: String,
-      enum: ['create', 'read', 'update', 'delete']
+    enum: ['create', 'read', 'update', 'delete', 'export', 'import', 'approve', 'publish']
     }]
   }],
   avatar: String,

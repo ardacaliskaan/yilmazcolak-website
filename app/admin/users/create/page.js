@@ -87,54 +87,67 @@ export default function CreateUserPage() {
   };
 
   // Form submit
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!validateForm()) {
+    return;
+  }
+
+  setLoading(true);
+  setErrors({});
+
+  try {
+    const requestData = {
+      name: formData.name.trim(),
+      email: formData.email.trim().toLowerCase(),
+      password: formData.password,
+      role: formData.role,
+      isActive: formData.isActive,
+      permissions: formData.permissions
+    };
     
-    if (!validateForm()) {
-      return;
-    }
+    // Debug: Request'i logla
+    console.log('📤 Frontend gönderdiği data:', requestData);
+    console.log('📤 Permissions count:', requestData.permissions?.length);
+    
+    const response = await fetch('/api/admin/users', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestData),
+    });
 
-    setLoading(true);
-    setErrors({});
+    // Debug: Response'ı logla
+    console.log('📥 Response status:', response.status);
+    console.log('📥 Response ok:', response.ok);
+    
+    const data = await response.json();
+console.log('📥 Response data:', JSON.stringify(data, null, 2));
 
-    try {
-      const response = await fetch('/api/admin/users', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          email: formData.email.trim().toLowerCase(),
-          password: formData.password,
-          role: formData.role,
-          isActive: formData.isActive,
-          permissions: formData.permissions
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setSuccessMessage('Kullanıcı başarıyla oluşturuldu');
-        setTimeout(() => {
-          router.push('/admin/users');
-        }, 1500);
+    if (response.ok) {
+      setSuccessMessage('Kullanıcı başarıyla oluşturuldu');
+      setTimeout(() => {
+        router.push('/admin/users');
+      }, 1500);
+    } else {
+      // Detaylı hata göster
+console.error('❌ API Error:', JSON.stringify(data, null, 2));
+      if (data.errors) {
+        setErrors(data.errors);
       } else {
-        if (data.errors) {
-          setErrors(data.errors);
-        } else {
-          setErrors({ general: data.message || 'Bir hata oluştu' });
-        }
+        setErrors({ general: data.message || 'Bir hata oluştu' });
       }
-    } catch (error) {
-      console.error('Create user error:', error);
-      setErrors({ general: 'Sunucu hatası oluştu' });
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch (error) {
+    console.error('❌ Network error:', error);
+    setErrors({ general: 'Sunucu hatası oluştu' });
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Input değişiklikleri
   const handleInputChange = (e) => {

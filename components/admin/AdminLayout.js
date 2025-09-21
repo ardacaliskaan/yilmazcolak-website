@@ -161,17 +161,31 @@ const AdminLayout = ({ children }) => {
     }
   }, [pathname, fetchUserData]);
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
-      router.push('/admin/login');
-    } catch (error) {
-      console.error('Logout error:', error);
+const handleLogout = async () => {
+  try {
+    console.log('Starting logout process...');
+    
+    // Frontend state'i hemen temizle
+    setUser(null);
+    setMenuItems([]);
+    setUserMenuOpen(false);
+    
+    // Local storage'ı temizle
+    if (typeof window !== 'undefined') {
+      localStorage.clear();
+      sessionStorage.clear();
     }
-  };
+    
+    // Logout sayfasına yönlendir (logout sayfası API çağrısını yapacak)
+    router.push('/admin/logout');
+    
+  } catch (error) {
+    console.error('Logout error:', error);
+    
+    // Hata durumunda force redirect
+    window.location.href = '/admin/login';
+  }
+};
 
   if (pathname === '/admin/login') {
     return <>{children}</>;
