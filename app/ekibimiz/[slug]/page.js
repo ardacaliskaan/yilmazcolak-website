@@ -22,7 +22,7 @@ const TeamMemberProfile = ({ member }) => {
 
   const getPositionLabel = (position) => {
     const positionMap = {
-      'founding-partner': 'Kurucu Ortak & Avukat',
+      'founding-partner': 'Ortak & Avukat',
       'managing-partner': 'Ortak & Avukat',
       'lawyer': 'Avukat',
       'trainee-lawyer': 'Stajyer Avukat',

@@ -1,19 +1,17 @@
-// components/home/TeamSection.js - Ultra Professional Version - Position Hover Fix
+// components/home/TeamSection.js - iOS Safari %100 Güvenli
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 const TeamSection = () => {
-  const [isVisible, setIsVisible] = useState(false);
-  const [isClient, setIsClient] = useState(false);
   const [teamMembers, setTeamMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [hoveredMember, setHoveredMember] = useState(null);
 
+  // 🔧 Direkt mount, hiç isClient yok
   useEffect(() => {
-    setIsClient(true);
     fetchTeamMembers();
   }, []);
 
@@ -51,7 +49,7 @@ const TeamSection = () => {
 
   const getPositionLabel = (position) => {
     const positionMap = {
-      'founding-partner': 'Kurucu Ortak & Avukat',
+      'founding-partner': 'Ortak & Avukat',
       'managing-partner': 'Ortak & Avukat',
       'lawyer': 'Avukat',
       'trainee-lawyer': 'Stajyer Avukat',
@@ -63,37 +61,13 @@ const TeamSection = () => {
   const getPositionHierarchy = (position) => {
     const hierarchy = {
       'founding-partner': 1,
-      'managing-partner': 2,
-      'lawyer': 3,
-      'trainee-lawyer': 4,
-      'legal-assistant': 5
+      'managing-partner': 1,
+      'lawyer': 2,
+      'trainee-lawyer': 3,
+      'legal-assistant': 4
     };
     return hierarchy[position] || 6;
   };
-
-  // Scroll animation trigger
-  useEffect(() => {
-    if (!isClient) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (entry && entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.1, rootMargin: '50px 0px' }
-    );
-
-    const element = document.getElementById('team-section');
-    if (element) {
-      observer.observe(element);
-    }
-
-    return () => {
-      if (element) observer.unobserve(element);
-    };
-  }, [isClient]);
 
   // Sort team members by hierarchy then by sortOrder
   const sortedMembers = [...teamMembers].sort((a, b) => {
@@ -107,16 +81,13 @@ const TeamSection = () => {
     return (a.sortOrder || 0) - (b.sortOrder || 0);
   });
 
-  if (!isClient) {
-    return <div className="py-32 bg-gradient-to-b from-white via-gray-50 to-white"></div>;
-  }
-
+  // 🔧 IntersectionObserver YOK, direkt render
   return (
     <section 
       id="team-section"
       className="relative py-32 bg-gradient-to-b from-white via-gray-50 to-white overflow-hidden"
     >
-      {/* Background Elements */}
+      {/* Background Elements - Aynı */}
       <div className="absolute inset-0">
         <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-amber-100/30 to-orange-100/30 rounded-full blur-3xl transform -translate-x-48 -translate-y-48"></div>
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-amber-100/30 to-orange-100/30 rounded-full blur-3xl transform translate-x-48 translate-y-48"></div>
@@ -124,12 +95,10 @@ const TeamSection = () => {
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Section Header */}
-        <div className={`text-center mb-20 transition-all duration-1000 ease-out ${
-          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-        }`}>
+        {/* Section Header - Animasyon YOK, direkt görünür */}
+        <div className="text-center mb-20">
           
-          {/* Main Title - İcon kaldırıldı */}
+          {/* Main Title - Aynı stil */}
           <h2 className="text-5xl md:text-6xl lg:text-7xl font-black text-gray-900 mb-8 tracking-tight leading-none">
             <span className="block">Uzman</span>
             <span className="block bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 bg-clip-text text-transparent">
@@ -137,13 +106,13 @@ const TeamSection = () => {
             </span>
           </h2>
           
-          {/* Subtitle */}
+          {/* Subtitle - Aynı */}
           <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed font-light">
             Hukuk alanında yılların deneyimine sahip, uzman kadromuzla 
             size en profesyonel hizmeti sunmak için buradayız
           </p>
 
-          {/* Stats Bar - İconlar temizlendi */}
+          {/* Stats Bar - Aynı (animasyon yok) */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-3xl mx-auto mt-16">
             {[
               { number: teamMembers.length || '12', label: 'Uzman Avukat' },
@@ -153,10 +122,7 @@ const TeamSection = () => {
             ].map((stat, index) => (
               <div
                 key={index}
-                className={`bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-500 transform hover:-translate-y-1 ${
-                  isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-                }`}
-                style={{ transitionDelay: isVisible ? `${(index + 1) * 100}ms` : '0ms' }}
+                className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 border border-white/50 shadow-lg hover:shadow-xl transition-all duration-500 transform hover:-translate-y-1"
               >
                 <div className="text-3xl md:text-4xl font-black bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-2">
                   {stat.number}
@@ -169,7 +135,7 @@ const TeamSection = () => {
           </div>
         </div>
 
-        {/* Loading State */}
+        {/* Loading State - Aynı */}
         {loading && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {[...Array(12)].map((_, index) => (
@@ -190,7 +156,7 @@ const TeamSection = () => {
           </div>
         )}
 
-        {/* Error State */}
+        {/* Error State - Aynı */}
         {error && (
           <div className="text-center py-20">
             <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -209,57 +175,55 @@ const TeamSection = () => {
           </div>
         )}
 
-        {/* Team Grid */}
+        {/* Team Grid - Animasyon YOK, direkt görünür */}
         {!loading && !error && sortedMembers.length > 0 && (
-          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 transition-all duration-1000 ease-out ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-          }`}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {sortedMembers.map((member, index) => (
               <div
                 key={member._id || index}
-                className={`group transition-all duration-700 ease-out ${
-                  isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
-                }`}
-                style={{ transitionDelay: isVisible ? `${(index + 6) * 80}ms` : '0ms' }}
+                className="group"
                 onMouseEnter={() => setHoveredMember(member._id)}
                 onMouseLeave={() => setHoveredMember(null)}
               >
-                <Link href={`/ekibimiz/${member.slug}`} className="block">
+                <Link href={`/ekibimiz/${member.slug || '#'}`} className="block">
                   <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl overflow-hidden border border-white/50 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 hover:scale-[1.02]">
                     
-                    {/* Image Container */}
+                    {/* Image Container - Aynı */}
                     <div className="relative aspect-[3/4] overflow-hidden">
                       {member.image ? (
                         <img
                           src={member.image}
-                          alt={member.name}
+                          alt={member.name || 'Team Member'}
                           className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110"
                           loading="lazy"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
                         />
                       ) : (
                         <div className="flex items-center justify-center h-full bg-gradient-to-br from-amber-100 via-orange-100 to-amber-200">
                           <div className="text-center">
                             <div className="w-24 h-24 bg-white/90 rounded-full flex items-center justify-center shadow-lg mb-4 transform transition-all duration-300 group-hover:scale-110">
                               <span className="text-3xl font-black bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
-                                {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                {(member.name || 'AA').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                               </span>
                             </div>
                           </div>
                         </div>
                       )}
 
-                      {/* Gradient Overlay */}
+                      {/* Gradient Overlay - Aynı */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
                       
-                      {/* Position Badge - Hover'da görünür */}
+                      {/* Position Badge - Aynı */}
                       <div className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-1 group-hover:translate-y-0">
                         <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-white/80 backdrop-blur-md text-gray-700 shadow-md border border-white/40">
                           {getPositionLabel(member.position)}
                         </span>
                       </div>
                       
-                      {/* Specializations Overlay */}
-                      {member.specializations && member.specializations.length > 0 && (
+                      {/* Specializations Overlay - Aynı */}
+                      {member.specializations && Array.isArray(member.specializations) && member.specializations.length > 0 && (
                         <div className="absolute bottom-6 left-6 right-6 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500">
                           <div className="space-y-2">
                             <div className="text-white text-xs font-semibold uppercase tracking-wider">
@@ -285,24 +249,24 @@ const TeamSection = () => {
                       )}
                     </div>
 
-                    {/* Content */}
+                    {/* Content - Aynı */}
                     <div className="p-6">
                       <h3 className="text-xl font-black text-gray-900 mb-2 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-amber-600 group-hover:to-orange-600 group-hover:bg-clip-text transition-all duration-300">
-                        {member.name}
+                        {member.name || 'İsim Belirtilmemiş'}
                       </h3>
                       <p className="text-amber-600 font-semibold text-sm mb-4">
-                        {member.title}
+                        {member.title || getPositionLabel(member.position)}
                       </p>
 
-                      {/* Brief Bio */}
+                      {/* Brief Bio - Aynı */}
                       {member.bio && (
                         <p className="text-gray-600 text-sm leading-relaxed line-clamp-3 mb-4">
                           {member.bio}
                         </p>
                       )}
 
-                      {/* Languages */}
-                      {member.languages && member.languages.length > 0 && (
+                      {/* Languages - Aynı */}
+                      {member.languages && Array.isArray(member.languages) && member.languages.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {member.languages.slice(0, 3).map((lang, idx) => (
                             <span
@@ -315,7 +279,7 @@ const TeamSection = () => {
                         </div>
                       )}
 
-                      {/* Hover Effect Arrow */}
+                      {/* Hover Effect Arrow - Aynı */}
                       <div className="flex justify-end mt-4 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
                         <div className="w-8 h-8 bg-gradient-to-r from-amber-500 to-orange-600 rounded-full flex items-center justify-center shadow-lg">
                           <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -331,7 +295,7 @@ const TeamSection = () => {
           </div>
         )}
 
-        {/* Empty State */}
+        {/* Empty State - Aynı */}
         {!loading && !error && sortedMembers.length === 0 && (
           <div className="text-center py-20">
             <div className="w-24 h-24 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -344,11 +308,9 @@ const TeamSection = () => {
           </div>
         )}
 
-        {/* Call to Action */}
+        {/* Call to Action - Animasyon YOK */}
         {!loading && !error && sortedMembers.length > 0 && (
-          <div className={`text-center mt-20 transition-all duration-1000 ease-out ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-          }`} style={{ transitionDelay: isVisible ? '800ms' : '0ms' }}>
+          <div className="text-center mt-20">
             <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-3xl p-12 shadow-2xl">
               <h3 className="text-3xl md:text-4xl font-black text-white mb-6">
                 Hangi Konuda Yardıma İhtiyacınız Var?

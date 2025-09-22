@@ -8,7 +8,7 @@ import Footer from '@/components/layout/Footer';
 
 // Position Types
 const positionTypes = [
-  { value: "founding-partner", label: "Kurucu Ortak & Avukat" },
+  { value: "founding-partner", label: "Ortak & Avukat" },
   { value: "managing-partner", label: "Ortak & Avukat" },
   { value: "lawyer", label: "Avukat" },
   { value: "trainee-lawyer", label: "Stajyer Avukat" },
