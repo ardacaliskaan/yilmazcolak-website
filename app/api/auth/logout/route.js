@@ -1,70 +1,84 @@
-// app/api/auth/logout/route.js - Düzeltilmiş Versiyon
+// app/api/auth/logout/route.js - Nuclear Logout API
 import { NextResponse } from "next/server";
 
 export async function POST(request) {
   try {
-    console.log('🚪 Logout request received');
+    console.log('🚪 Nuclear Logout başladı');
     
-    // Response oluştur
     const response = NextResponse.json({ 
       message: "Çıkış başarılı",
+      nuclear: true,
       timestamp: new Date().toISOString()
     });
     
-    // ⚠️ ÖNEMLİ: Login ile aynı ayarları kullan
-    response.cookies.set("admin-token", "", {
-      httpOnly: true,
-      secure: true,        // 👈 Login'deki gibi her zaman true
-      sameSite: "lax",
-      path: "/",
-      // domain eklenmez (login'de de yok)
-      maxAge: 0,
-      expires: new Date(0)
+    // 🔥 NUCLEAR OPTION: Her türlü cookie kombinasyonunu sil
+    const cookieNames = ['admin-token', 'token', 'auth-token', 'session', 'jwt'];
+    const paths = ['/', '/admin'];
+    const secureOptions = [true, false];
+    const sameSiteOptions = ['lax', 'strict', 'none'];
+    
+    cookieNames.forEach(name => {
+      paths.forEach(path => {
+        secureOptions.forEach(secure => {
+          sameSiteOptions.forEach(sameSite => {
+            try {
+              // Domain olmadan
+              response.cookies.set(name, "", {
+                httpOnly: true,
+                secure,
+                sameSite,
+                path,
+                maxAge: 0,
+                expires: new Date(0)
+              });
+              
+              // Localhost domain ile
+              response.cookies.set(name, "", {
+                httpOnly: true,
+                secure,
+                sameSite,
+                path,
+                domain: 'localhost',
+                maxAge: 0,
+                expires: new Date(0)
+              });
+              
+              // .localhost domain ile  
+              response.cookies.set(name, "", {
+                httpOnly: true,
+                secure,
+                sameSite,
+                path,
+                domain: '.localhost',
+                maxAge: 0,
+                expires: new Date(0)
+              });
+              
+            } catch (e) {
+              // Ignore errors - some combinations may fail
+            }
+          });
+        });
+      });
     });
     
-    // Backup temizleme (admin path için)
-    response.cookies.set("admin-token", "", {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      path: "/admin",
-      maxAge: 0,
-      expires: new Date(0)
-    });
+    console.log('✅ Nuclear logout - all cookie combinations cleared');
     
-    // Cache control headers
-    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    // Extra aggressive headers
+    response.headers.set('Set-Cookie', 'admin-token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; HttpOnly');
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private, max-age=0');
     response.headers.set('Pragma', 'no-cache');
     response.headers.set('Expires', '0');
-    
-    console.log('✅ Logout successful, cookies cleared');
+    response.headers.set('Clear-Site-Data', '"cache", "cookies", "storage"');
     
     return response;
     
   } catch (error) {
-    console.error('❌ Logout error:', error);
-    
-    // Hata olsa bile cookie'yi silmeye çalış
-    const response = NextResponse.json({ 
-      message: "Çıkış işlemi tamamlandı",
-      error: true 
-    }, { status: 500 });
-    
-    // Hata durumunda da aynı ayarları kullan
-    response.cookies.set("admin-token", "", {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 0,
-      expires: new Date(0)
-    });
-    
-    return response;
+    console.error('❌ Nuclear logout error:', error);
+    return NextResponse.json({ message: "Nuclear logout completed with errors" }, { status: 200 });
   }
 }
 
-// GET method'u da ekle
 export async function GET(request) {
   return POST(request);
 }
