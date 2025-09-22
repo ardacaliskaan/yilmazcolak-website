@@ -238,8 +238,8 @@ const ContactInfoSection = () => {
 const FAQSection = () => {
   const faqs = [
     {
-      question: "İlk görüşme ücretsiz mi?",
-      answer: "Evet, ön değerlendirme görüşmemiz tamamen ücretsizdir. Bu görüşmede davanızın durumunu değerlendiriyor ve size en doğru rehberliği sunuyoruz."
+      question: "İlk görüşme ücretli mi?",
+      answer: "Evet, Bu görüşmede davanızın durumunu değerlendiriyor ve size en doğru rehberliği sunuyoruz."
     },
     {
       question: "Randevu almak için ne yapmalıyım?",
@@ -247,7 +247,7 @@ const FAQSection = () => {
     },
     {
       question: "Acil durumlar için nasıl ulaşabilirim?",
-      answer: "7/24 acil durum hattımız aktiftir. Acil hukuki durumlarda +90 (555) 676 78 78 numaramızdan bize ulaşabilirsiniz."
+      answer: "Acil durum hattımız aktiftir. Acil hukuki durumlarda +90 (555) 676 78 78 numaramızdan bize ulaşabilirsiniz."
     },
     {
       question: "Hangi alanlarda hizmet veriyorsunuz?",
