@@ -9,9 +9,40 @@ import Footer from '@/components/layout/Footer';
 
 // Team Member Profile Component
 const TeamMemberProfile = ({ member }) => {
+  const [imageToShow, setImageToShow] = useState(null);
+  const [imageError, setImageError] = useState(false);
+
+  // İkinci fotoğraf logic'i
+  useEffect(() => {
+    if (!member.image) return;
+    
+    // İkinci fotoğraf yolu: /images/team/yusuf-colak.jpg → /images/team/yusuf-colak-2.jpg
+    const getSecondImagePath = (originalPath) => {
+      const lastDotIndex = originalPath.lastIndexOf('.');
+      const pathWithoutExt = originalPath.substring(0, lastDotIndex);
+      const extension = originalPath.substring(lastDotIndex);
+      return `${pathWithoutExt}-2${extension}`;
+    };
+
+    const secondImagePath = getSecondImagePath(member.image);
+
+    // İkinci fotoğraf var mı kontrol et
+    const img = new Image();
+    img.onload = () => {
+      // İkinci fotoğraf başarıyla yüklendi
+      setImageToShow(secondImagePath);
+      setImageError(false);
+    };
+    img.onerror = () => {
+      // İkinci fotoğraf bulunamadı, birinci fotoğrafı kullan
+      setImageToShow(member.image);
+      setImageError(false);
+    };
+    img.src = secondImagePath;
+  }, [member.image]);
+
   const getPositionColor = (position) => {
     const colorMap = {
-      'founding-partner': 'bg-purple-100 text-purple-800 border-purple-200',
       'managing-partner': 'bg-blue-100 text-blue-800 border-blue-200',
       'lawyer': 'bg-green-100 text-green-800 border-green-200',
       'trainee-lawyer': 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -22,7 +53,6 @@ const TeamMemberProfile = ({ member }) => {
 
   const getPositionLabel = (position) => {
     const positionMap = {
-      'founding-partner': 'Ortak & Avukat',
       'managing-partner': 'Ortak & Avukat',
       'lawyer': 'Avukat',
       'trainee-lawyer': 'Stajyer Avukat',
@@ -49,15 +79,13 @@ const TeamMemberProfile = ({ member }) => {
             </div>
           </div>
 
-          {/* Actual Image */}
-          {member.image && (
+          {/* Dinamik Image - İkinci fotoğraf öncelik */}
+          {imageToShow && !imageError && (
             <img
-              src={member.image}
+              src={imageToShow}
               alt={member.name}
               className="absolute inset-0 w-full h-full object-cover"
-              onError={(e) => {
-                e.target.style.display = 'none';
-              }}
+              onError={() => setImageError(true)}
             />
           )}
         </div>

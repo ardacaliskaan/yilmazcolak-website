@@ -8,7 +8,6 @@ import Footer from '@/components/layout/Footer';
 
 // Position Types
 const positionTypes = [
-  { value: "founding-partner", label: "Ortak & Avukat" },
   { value: "managing-partner", label: "Ortak & Avukat" },
   { value: "lawyer", label: "Avukat" },
   { value: "trainee-lawyer", label: "Stajyer Avukat" },
@@ -71,7 +70,6 @@ const TeamHeroSection = ({ totalMembers, loading }) => {
 const TeamCard = ({ member, index }) => {
   const getPositionColor = (position) => {
     const colorMap = {
-      'founding-partner': 'bg-purple-100 text-purple-800 border-purple-200',
       'managing-partner': 'bg-blue-100 text-blue-800 border-blue-200',
       'lawyer': 'bg-green-100 text-green-800 border-green-200',
       'trainee-lawyer': 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -262,7 +260,6 @@ const TeamByPosition = ({ positionType, members, loading }) => {
 // Main Page Component
 export default function EkibimizPage() {
   const [teamMembers, setTeamMembers] = useState({
-    'founding-partner': [],
     'managing-partner': [],
     'lawyer': [],
     'trainee-lawyer': [],
@@ -299,7 +296,6 @@ export default function EkibimizPage() {
       if (data.success && Array.isArray(data.members)) {
         // Group members by position
         const grouped = {
-          'founding-partner': [],
           'managing-partner': [],
           'lawyer': [],
           'trainee-lawyer': [],

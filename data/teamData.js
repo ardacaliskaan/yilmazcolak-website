@@ -404,7 +404,6 @@ export const teamData = [
 
 // Position Types for Admin Panel
 export const positionTypes = [
-  { value: "founding-partner", label: "Kurucu Ortak & Avukat" },
   { value: "managing-partner", label: "Ortak & Avukat" },
   { value: "lawyer", label: "Avukat" },
   { value: "trainee-lawyer", label: "Stajyer Avukat" },

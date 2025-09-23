@@ -45,7 +45,6 @@ export default function AdminTeamManagement() {
 
   // Position seçenekleri - Edit sayfası ile tutarlı
   const positionOptions = [
-    { value: 'founding-partner', label: 'Ortak & Avukat', color: 'bg-purple-100 text-purple-800' },
     { value: 'managing-partner', label: 'Ortak & Avukat', color: 'bg-blue-100 text-blue-800' },
     { value: 'lawyer', label: 'Avukat', color: 'bg-green-100 text-green-800' },
     { value: 'trainee-lawyer', label: 'Stajyer Avukat', color: 'bg-yellow-100 text-yellow-800' },

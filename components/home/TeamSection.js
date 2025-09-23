@@ -49,7 +49,6 @@ const TeamSection = () => {
 
   const getPositionLabel = (position) => {
     const positionMap = {
-      'founding-partner': 'Ortak & Avukat',
       'managing-partner': 'Ortak & Avukat',
       'lawyer': 'Avukat',
       'trainee-lawyer': 'Stajyer Avukat',
@@ -60,13 +59,12 @@ const TeamSection = () => {
 
   const getPositionHierarchy = (position) => {
     const hierarchy = {
-      'founding-partner': 1,
       'managing-partner': 1,
       'lawyer': 2,
       'trainee-lawyer': 3,
       'legal-assistant': 4
     };
-    return hierarchy[position] || 6;
+    return hierarchy[position] || 5;
   };
 
   // Sort team members by hierarchy then by sortOrder
