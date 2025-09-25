@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import ArticleEditor from '../../../components/admin/articles/ArticleEditor';
-import { useAuth } from '../../../hooks/useAuth'; // Auth hook'u varsa
+import ArticleEditor from '../../../../components/admin/articles/ArticleEditor';
 
 export default function CreateArticlePage() {
   const router = useRouter();
@@ -11,9 +10,8 @@ export default function CreateArticlePage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
-  // Auth bilgisi - gerçek uygulamada auth hook'undan gelecek
-  // const { user } = useAuth();
-  const user = { id: 1, name: 'Av. Murat YILMAZ' }; // Mock user
+  // Mock user - mevcut auth sisteminizle uyumlu
+  const user = { id: 1, name: 'Av. Murat YILMAZ' };
 
   const handleSave = async (articleData) => {
     try {
@@ -27,12 +25,12 @@ export default function CreateArticlePage() {
         status: 'draft'
       };
 
-      // API call to save article
       const response = await fetch('/api/admin/articles', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(dataToSave),
       });
 
@@ -45,7 +43,6 @@ export default function CreateArticlePage() {
       
       setSuccess('✅ Makale taslak olarak kaydedildi!');
       
-      // 2 saniye sonra edit sayfasına yönlendir
       setTimeout(() => {
         router.push(`/admin/articles/${savedArticle.id}/edit`);
       }, 2000);
@@ -63,7 +60,6 @@ export default function CreateArticlePage() {
       setIsLoading(true);
       setError('');
 
-      // Validation checks
       if (!articleData.title.trim()) {
         throw new Error('Makale başlığı gereklidir.');
       }
@@ -79,7 +75,7 @@ export default function CreateArticlePage() {
       if (!articleData.metaDescription.trim()) {
         throw new Error('SEO meta açıklaması gereklidir.');
       }
-
+      
       const dataToPublish = {
         ...articleData,
         authorId: user.id,
@@ -88,12 +84,12 @@ export default function CreateArticlePage() {
         publishedAt: new Date().toISOString()
       };
 
-      // API call to publish article
       const response = await fetch('/api/admin/articles', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(dataToPublish),
       });
 
@@ -102,11 +98,8 @@ export default function CreateArticlePage() {
         throw new Error(errorData.message || 'Makale yayınlanamadı');
       }
 
-      const publishedArticle = await response.json();
-      
       setSuccess('🎉 Makale başarıyla yayınlandı!');
       
-      // 2 saniye sonra makale listesine yönlendir
       setTimeout(() => {
         router.push('/admin/articles');
       }, 2000);
@@ -121,7 +114,6 @@ export default function CreateArticlePage() {
 
   const handleAutoSave = async (articleData) => {
     try {
-      // Auto-save sadece başlık varsa çalışsın
       if (!articleData.title.trim()) return;
 
       const dataToAutoSave = {
@@ -132,24 +124,22 @@ export default function CreateArticlePage() {
         isAutoSave: true
       };
 
-      // Auto-save API call (daha hafif, hata handling'i sessiz)
       await fetch('/api/admin/articles/auto-save', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(dataToAutoSave),
       });
 
     } catch (err) {
-      // Auto-save hatalarını sessizce geç
       console.log('Auto-save failed:', err);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Success/Error Messages */}
       {success && (
         <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-pulse">
           {success}
@@ -170,7 +160,6 @@ export default function CreateArticlePage() {
         </div>
       )}
 
-      {/* Loading Overlay */}
       {isLoading && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 flex items-center space-x-3">
@@ -180,7 +169,6 @@ export default function CreateArticlePage() {
         </div>
       )}
 
-      {/* Article Editor */}
       <ArticleEditor
         mode="create"
         initialData={{

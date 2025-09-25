@@ -142,7 +142,7 @@ const Breadcrumbs = ({ category, search }) => {
         {search && (
           <>
             <span>/</span>
-            <span className="text-gray-900 font-medium">"{search}" araması</span>
+<span className="text-gray-900 font-medium">'{search}' araması</span>
           </>
         )}
       </nav>
@@ -522,12 +522,13 @@ export default function BlogListClient({ searchParams }) {
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
               {category ? `${getCategoryName(category)} Makaleleri` : 
-               search ? `"${search}" Arama Sonuçları` : 
+search ? `${search} Arama Sonuçları` :
                'Hukuk Makaleleri'}
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
               {category ? `${getCategoryName(category)} konusunda uzman avukatlarımızdan güncel makaleler ve rehberler` :
-               search ? `"${search}" konusuyla ilgili ${pagination?.totalCount || 0} makale bulundu` :
+search ? `${search} konusuyla ilgili ${pagination?.totalCount || 0} makale bulundu` :
+
                'Hukuk alanında uzman makaleler ve rehberlerle bilginizi artırın'}
             </p>
           </div>
@@ -617,7 +618,7 @@ export default function BlogListClient({ searchParams }) {
                   <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-6" />
                   <h2 className="text-2xl font-bold text-gray-900 mb-4">Makale Bulunamadı</h2>
                   <p className="text-gray-600 mb-8">
-                    {search ? `"${search}" ile ilgili makale bulunamadı.` : 
+{search ? `${search} ile ilgili makale bulunamadı.` :
                      category ? `${getCategoryName(category)} kategorisinde henüz makale yok.` :
                      'Henüz yayınlanmış makale bulunmamaktadır.'}
                   </p>
