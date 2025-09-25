@@ -65,3 +65,58 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* app/globals.css - Admin Panel Text Color Fixes */
+
+/* Admin panel için genel text renk düzeltmeleri */
+.admin-panel input,
+.admin-panel textarea,
+.admin-panel select,
+.admin-panel label,
+.admin-panel p,
+.admin-panel span,
+.admin-panel h1,
+.admin-panel h2,
+.admin-panel h3,
+.admin-panel h4,
+.admin-panel h5,
+.admin-panel h6,
+.admin-panel div {
+  color: #111827 !important; /* text-gray-900 */
+}
+
+/* Input placeholder'lar için */
+.admin-panel input::placeholder,
+.admin-panel textarea::placeholder {
+  color: #9CA3AF !important; /* text-gray-400 */
+}
+
+/* Select option'lar için */
+.admin-panel select option {
+  color: #111827 !important;
+}
+
+/* Admin layout container'ı için */
+.admin-layout * {
+  color: inherit;
+}
+
+/* Form input'ları için özel sınıf */
+.admin-input {
+  @apply text-gray-900 placeholder:text-gray-400;
+}
+
+/* Admin text için özel sınıf */
+.admin-text {
+  @apply text-gray-900;
+}
+
+/* Admin label için özel sınıf */
+.admin-label {
+  @apply text-gray-700 font-medium;
+}
+
+/* Admin başlıklar için */
+.admin-heading {
+  @apply text-gray-900 font-semibold;
+}

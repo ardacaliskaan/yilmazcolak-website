@@ -1,46 +1,263 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+'use client';
+
+import Image from 'next/image';
+
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Bold, 
   Italic, 
   Underline, 
-  Link, 
+  Link as LinkIcon, 
   List, 
-  ListOrdered,
-  Heading1,
-  Heading2,
-  Heading3,
-  Quote,
-  Code,
+  ListOrdered, 
+  Quote, 
+  Image as ImageIcon,
+  Upload,
+  X,
   Save,
-  Eye,
-  Globe,
-  Settings,
-  Target,
-  BarChart3,
-  AlertTriangle,
-  CheckCircle,
+  Send,
   Clock,
-  Image,
-  Calendar,
+  Zap,
+  Hash,
   Tag,
   FileText,
-  Zap,
-  BookOpen,
-  TrendingUp,
-  Monitor,
-  Plus,
-  X
+  Settings,
+  CheckCircle,
+  AlertTriangle,
+  Info
 } from 'lucide-react';
 
-const ArticleEditor = ({ 
+// Image upload modal component
+const ImageUploadModal = ({ isOpen, onClose, onImageSelect }) => {
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadUrl, setUploadUrl] = useState('');
+  const [preview, setPreview] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [activeTab, setActiveTab] = useState('upload');
+  const fileInputRef = useRef(null);
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+      setSelectedFile(file);
+      
+      const reader = new FileReader();
+      reader.onload = (e) => setPreview(e.target.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', selectedFile);
+      formData.append('type', 'article');
+
+      const response = await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        onImageSelect(data.url, selectedFile.name);
+        handleClose();
+      } else {
+        alert('Upload başarısız: ' + data.message);
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Upload sırasında bir hata oluştu');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleUrlInsert = () => {
+    if (uploadUrl) {
+      onImageSelect(uploadUrl, 'Harici görsel');
+      handleClose();
+    }
+  };
+
+  const handleClose = () => {
+    setSelectedFile(null);
+    setUploadUrl('');
+    setPreview('');
+    setUploading(false);
+    setActiveTab('upload');
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">Görsel Ekle</h3>
+          <button
+            onClick={handleClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="border-b border-gray-200 mb-6">
+          <div className="flex space-x-8">
+            <button 
+              onClick={() => setActiveTab('upload')}
+              className={`border-b-2 pb-2 text-sm font-medium ${
+                activeTab === 'upload' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Dosya Yükle
+            </button>
+            <button 
+              onClick={() => setActiveTab('url')}
+              className={`border-b-2 pb-2 text-sm font-medium ${
+                activeTab === 'url' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              URL Ekle
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div className="space-y-4">
+          {activeTab === 'upload' ? (
+            <>
+              {/* File Drop Zone */}
+              <div 
+                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-sm text-gray-600 mb-2">
+                  {selectedFile ? selectedFile.name : 'Görsel dosyasını seçin veya sürükleyip bırakın'}
+                </p>
+                <p className="text-xs text-gray-500">PNG, JPG, GIF desteklenir (Maks 5MB)</p>
+                
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </div>
+
+              {/* Preview */}
+              {preview && (
+                <div className="border rounded-lg p-4">
+                  <Image
+                    src={preview} 
+                    alt="Preview" 
+                    width={300}
+                    height={192}
+                    className="max-w-full h-48 object-contain mx-auto rounded"
+                  />
+                </div>
+              )}
+
+              {/* Upload Button */}
+              {selectedFile && (
+                <button
+                  onClick={handleUpload}
+                  disabled={uploading}
+                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                >
+                  {uploading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Yükleniyor...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      Yükle ve Ekle
+                    </>
+                  )}
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              {/* URL Input */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Görsel URL&apos;si:
+                </label>
+                <input
+                  type="url"
+                  value={uploadUrl}
+                  onChange={(e) => setUploadUrl(e.target.value)}
+                  placeholder="https://example.com/image.jpg"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                />
+              </div>
+
+              {/* URL Preview */}
+              {uploadUrl && (
+                <div className="border rounded-lg p-4">
+                  <Image 
+                    src={uploadUrl} 
+                    alt="URL Preview" 
+                    width={300}
+                    height={192}
+                    className="max-w-full h-48 object-contain mx-auto rounded"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'block';
+                    }}
+                  />
+                  <div className="text-center text-gray-500 text-sm hidden">
+                    Görsel yüklenemedi
+                  </div>
+                </div>
+              )}
+
+              {/* Add URL Button */}
+              {uploadUrl && (
+                <button
+                  onClick={handleUrlInsert}
+                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Görsel Ekle
+                </button>
+              )}
+            </>
+          )}
+
+          {/* Cancel Button */}
+          <button
+            onClick={handleClose}
+            className="w-full px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            İptal
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Main Article Editor Component
+export default function ArticleEditor({ 
   mode = 'create', 
   initialData = {}, 
-  onSave = () => {}, 
-  onPublish = () => {},
-  onAutoSave = () => {}
-}) => {
-  
-  // Form State
+  onSave,
+  onPublish,
+  onAutoSave 
+}) {
+  // State
   const [articleData, setArticleData] = useState({
     title: '',
     slug: '',
@@ -53,658 +270,570 @@ const ArticleEditor = ({
     tags: [],
     category: 'genel',
     status: 'draft',
-    featuredImage: '',
     allowComments: true,
     scheduledAt: '',
+    featuredImage: '',
     ...initialData
   });
 
   const [activeTab, setActiveTab] = useState('editor');
-  const [seoScore, setSeoScore] = useState(0);
-  const [readabilityScore, setReadabilityScore] = useState(0);
-  const [wordCount, setWordCount] = useState(0);
-  const [readingTime, setReadingTime] = useState(0);
-  const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState(null);
-  const [newTag, setNewTag] = useState('');
-  const [newKeyword, setNewKeyword] = useState('');
-  const [previewMode, setPreviewMode] = useState(false);
-  
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [showSEOAnalysis, setShowSEOAnalysis] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Refs
   const contentRef = useRef(null);
   const titleRef = useRef(null);
 
-  // Kategoriler
-  const categories = [
-    { value: 'genel', label: 'Genel', color: 'gray' },
-    { value: 'aile-hukuku', label: 'Aile Hukuku', color: 'blue' },
-    { value: 'ceza-hukuku', label: 'Ceza Hukuku', color: 'red' },
-    { value: 'is-hukuku', label: 'İş Hukuku', color: 'green' },
-    { value: 'ticaret-hukuku', label: 'Ticaret Hukuku', color: 'purple' },
-    { value: 'idare-hukuku', label: 'İdare Hukuku', color: 'orange' },
-    { value: 'gayrimenkul-hukuku', label: 'Gayrimenkul Hukuku', color: 'teal' },
-    { value: 'miras-hukuku', label: 'Miras Hukuku', color: 'amber' },
-    { value: 'kvkk', label: 'KVKK', color: 'cyan' },
-    { value: 'icra-hukuku', label: 'İcra Hukuku', color: 'indigo' }
-  ];
-
-  // Auto-slug generation
-  const generateSlug = (title) => {
-    return title
-      .toLowerCase()
-      .replace(/ğ/g, 'g')
-      .replace(/ü/g, 'u')
-      .replace(/ş/g, 's')
-      .replace(/ı/g, 'i')
-      .replace(/ö/g, 'o')
-      .replace(/ç/g, 'c')
-      .replace(/[^a-z0-9\s]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
-  };
-
-  // SEO Analysis
-  const analyzeSEO = useCallback(() => {
-    let score = 0;
-    
-    // Title length (30-60 characters ideal)
-    if (articleData.title.length >= 30 && articleData.title.length <= 60) score += 20;
-    else if (articleData.title.length >= 15) score += 10;
-    
-    // Meta description (120-160 characters ideal)
-    if (articleData.metaDescription.length >= 120 && articleData.metaDescription.length <= 160) score += 20;
-    else if (articleData.metaDescription.length >= 50) score += 10;
-    
-    // Focus keyword checks
-    if (articleData.focusKeyword) {
-      const keyword = articleData.focusKeyword.toLowerCase();
-      
-      // Title contains focus keyword
-      if (articleData.title.toLowerCase().includes(keyword)) score += 15;
-      
-      // Meta description contains focus keyword
-      if (articleData.metaDescription.toLowerCase().includes(keyword)) score += 15;
-      
-      // Content contains focus keyword
-      if (articleData.content.toLowerCase().includes(keyword)) score += 10;
-      
-      // Slug contains focus keyword
-      if (articleData.slug.includes(keyword.replace(/\s+/g, '-'))) score += 10;
-    }
-    
-    // Content length (300+ words ideal)
-    if (wordCount >= 1000) score += 10;
-    else if (wordCount >= 500) score += 7;
-    else if (wordCount >= 300) score += 5;
-    
-    setSeoScore(Math.min(score, 100));
-  }, [articleData, wordCount]);
-
-  // Readability Analysis
-  const analyzeReadability = useCallback(() => {
-    if (!articleData.content) return;
-    
-    const cleanText = articleData.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-    const sentences = cleanText.split(/[.!?]+/).filter(s => s.trim().length > 0);
-    const words = cleanText.split(/\s+/).filter(w => w.length > 0);
-    
-    if (sentences.length === 0 || words.length === 0) return;
-    
-    const avgWordsPerSentence = words.length / sentences.length;
-    const longWords = words.filter(w => w.length > 6).length;
-    const longWordPercentage = (longWords / words.length) * 100;
-    
-    let score = 100;
-    
-    // Sentence length penalty
-    if (avgWordsPerSentence > 25) score -= 30;
-    else if (avgWordsPerSentence > 20) score -= 20;
-    else if (avgWordsPerSentence > 15) score -= 10;
-    
-    // Complex words penalty
-    if (longWordPercentage > 40) score -= 20;
-    else if (longWordPercentage > 30) score -= 10;
-    
-    setReadabilityScore(Math.max(score, 0));
-  }, [articleData.content]);
-
-  // Update word count and reading time
-  const updateStats = useCallback(() => {
-    if (!articleData.content) return;
-    
-    const cleanText = articleData.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-    const words = cleanText.split(' ').filter(word => word.length > 0).length;
-    
-    setWordCount(words);
-    setReadingTime(Math.ceil(words / 200)); // 200 words per minute average
-  }, [articleData.content]);
-
-  // Handle input changes
-  const handleInputChange = (field, value) => {
-    setArticleData(prev => {
-      const updated = { ...prev, [field]: value };
-      
-      // Auto-generate slug from title
-      if (field === 'title' && !prev.slug) {
-        updated.slug = generateSlug(value);
+  // Auto save effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (onAutoSave && articleData.title && articleData.content) {
+        onAutoSave(articleData);
       }
+    }, 30000);
+
+    return () => clearTimeout(timer);
+  }, [articleData, onAutoSave]);
+
+  // Input change handler
+  const handleInputChange = (field, value) => {
+    setArticleData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+
+    // Auto-generate slug from title
+    if (field === 'title' && !initialData.slug) {
+      const slug = value
+        .toLowerCase()
+        .replace(/ğ/g, 'g')
+        .replace(/ü/g, 'u')
+        .replace(/ş/g, 's')
+        .replace(/ı/g, 'i')
+        .replace(/ö/g, 'o')
+        .replace(/ç/g, 'c')
+        .replace(/[^a-z0-9\s]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
       
-      return updated;
-    });
-  };
-
-  // Add tag
-  const addTag = () => {
-    if (newTag && !articleData.tags.includes(newTag)) {
       setArticleData(prev => ({
         ...prev,
-        tags: [...prev.tags, newTag]
+        slug
       }));
-      setNewTag('');
     }
   };
 
-  // Remove tag
-  const removeTag = (tagToRemove) => {
-    setArticleData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
-    }));
-  };
-
-  // Add keyword
-  const addKeyword = () => {
-    if (newKeyword && !articleData.keywords.includes(newKeyword)) {
-      setArticleData(prev => ({
-        ...prev,
-        keywords: [...prev.keywords, newKeyword]
-      }));
-      setNewKeyword('');
-    }
-  };
-
-  // Remove keyword
-  const removeKeyword = (keywordToRemove) => {
-    setArticleData(prev => ({
-      ...prev,
-      keywords: prev.keywords.filter(keyword => keyword !== keywordToRemove)
-    }));
-  };
-
-  // Editor toolbar functions
+  // Rich text editor commands
   const execCommand = (command, value = null) => {
     document.execCommand(command, false, value);
     contentRef.current?.focus();
   };
 
-  // Auto-save functionality
-  useEffect(() => {
-    const autoSaveTimer = setTimeout(() => {
-      if (mode === 'edit' && articleData.title) {
-        setIsAutoSaving(true);
-        onAutoSave(articleData);
-        setTimeout(() => {
-          setIsAutoSaving(false);
-          setLastSaved(new Date());
-        }, 1000);
+  // Insert image handler
+  const handleImageSelect = (url, alt) => {
+    const imgTag = `<img src="${url}" alt="${alt}" class="max-w-full h-auto rounded-lg my-4" />`;
+    
+    if (contentRef.current) {
+      const selection = window.getSelection();
+      if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const div = document.createElement('div');
+        div.innerHTML = imgTag;
+        range.insertNode(div.firstChild);
+        range.collapse(false);
+      } else {
+        contentRef.current.innerHTML += imgTag;
       }
-    }, 3000);
-
-    return () => clearTimeout(autoSaveTimer);
-  }, [articleData, mode, onAutoSave]);
-
-  // Update analyses when content changes
-  useEffect(() => {
-    updateStats();
-    analyzeSEO();
-    analyzeReadability();
-  }, [articleData, updateStats, analyzeSEO, analyzeReadability]);
-
-  const getScoreColor = (score) => {
-    if (score >= 80) return 'text-green-600 bg-green-100 border-green-200';
-    if (score >= 60) return 'text-yellow-600 bg-yellow-100 border-yellow-200';
-    return 'text-red-600 bg-red-100 border-red-200';
+      
+      handleInputChange('content', contentRef.current.innerHTML);
+    }
   };
 
-  const getScoreIcon = (score) => {
-    if (score >= 80) return CheckCircle;
-    if (score >= 60) return AlertTriangle;
-    return AlertTriangle;
+  // Save handlers
+  const handleSave = async (status = 'draft') => {
+    setIsSaving(true);
+    try {
+      const dataToSave = {
+        ...articleData,
+        status,
+        content: contentRef.current?.innerHTML || articleData.content
+      };
+
+      if (status === 'published' && onPublish) {
+        await onPublish(dataToSave);
+      } else if (onSave) {
+        await onSave(dataToSave);
+      }
+    } catch (error) {
+      console.error('Save error:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Simple SEO Analysis
+  const seoAnalysis = {
+    titleLength: articleData.title.length,
+    metaDescLength: articleData.metaDescription.length,
+    focusKeywordInTitle: articleData.focusKeyword && articleData.title.toLowerCase().includes(articleData.focusKeyword.toLowerCase()),
+    focusKeywordInMeta: articleData.focusKeyword && articleData.metaDescription.toLowerCase().includes(articleData.focusKeyword.toLowerCase()),
+    contentLength: (contentRef.current?.textContent || '').length
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-xl font-semibold text-gray-900">
-                {mode === 'create' ? 'Yeni Makale' : 'Makale Düzenle'}
-              </h1>
-              {isAutoSaving && (
-                <div className="flex items-center text-sm text-gray-500">
-                  <Clock className="w-4 h-4 mr-1 animate-spin" />
-                  Otomatik kaydediliyor...
-                </div>
-              )}
-              {lastSaved && (
-                <div className="text-sm text-gray-500">
-                  Son kaydedilme: {lastSaved.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
-                </div>
-              )}
-            </div>
+    <div className="max-w-7xl mx-auto">
+      {/* Top Toolbar */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div className="flex items-center justify-between">
+          {/* Left - Tabs */}
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setActiveTab('editor')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                activeTab === 'editor'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <FileText className="w-4 h-4 inline mr-2" />
+              Editör
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                activeTab === 'settings'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Settings className="w-4 h-4 inline mr-2" />
+              Ayarlar
+            </button>
+          </div>
 
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => setPreviewMode(!previewMode)}
-                className={`inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium transition-colors ${
-                  previewMode 
-                    ? 'bg-blue-600 text-white border-blue-600' 
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <Eye className="w-4 h-4 mr-2" />
-                {previewMode ? 'Editör' : 'Önizleme'}
-              </button>
-
-              <button
-                onClick={() => onSave(articleData)}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                Taslak Kaydet
-              </button>
-
-              <button
-                onClick={() => onPublish(articleData)}
-                className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium rounded-md hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg"
-              >
-                <Globe className="w-4 h-4 mr-2" />
-                Yayınla
-              </button>
-            </div>
+          {/* Right - Actions */}
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => handleSave('draft')}
+              disabled={isSaving}
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
+            >
+              <Save className="w-4 h-4" />
+              {isSaving ? 'Kaydediliyor...' : 'Taslak Kaydet'}
+            </button>
+            
+            <button
+              onClick={() => handleSave('published')}
+              disabled={isSaving}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              <Send className="w-4 h-4" />
+              Yayınla
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Ana İçerik Alanı */}
-          <div className="lg:col-span-3 space-y-6">
-            {!previewMode ? (
-              <>
-                {/* Başlık */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <input
-                    ref={titleRef}
-                    type="text"
-                    placeholder="Makale başlığını buraya yazın..."
-                    value={articleData.title}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
-                    className="w-full text-3xl font-bold text-gray-900 placeholder-gray-400 border-none outline-none resize-none"
-                  />
-                  
-                  {/* Slug */}
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">URL (Slug)</label>
-                    <div className="flex">
-                      <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
-                        /makaleler/
-                      </span>
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        {/* Main Editor Area */}
+        <div className="xl:col-span-3">
+          {activeTab === 'editor' ? (
+            <>
+              {/* Title Section */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                <input
+                  ref={titleRef}
+                  type="text"
+                  placeholder="Makale başlığını buraya yazın..."
+                  value={articleData.title}
+                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  className="w-full text-3xl font-bold text-gray-900 placeholder-gray-400 border-none outline-none resize-none"
+                />
+                
+                {/* Slug */}
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">URL (Slug)</label>
+                  <div className="flex">
+                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                      /makaleler/
+                    </span>
+                    <input
+                      type="text"
+                      value={articleData.slug}
+                      onChange={(e) => handleInputChange('slug', e.target.value)}
+                      className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 focus:ring-blue-500 focus:border-blue-500 text-sm text-gray-900"
+                      placeholder="makale-url-slug"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Rich Text Editor */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                {/* Toolbar */}
+                <div className="border-b border-gray-200 p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => execCommand('bold')}
+                      className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Kalın"
+                    >
+                      <Bold className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => execCommand('italic')}
+                      className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="İtalik"
+                    >
+                      <Italic className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => execCommand('underline')}
+                      className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Altı çizili"
+                    >
+                      <Underline className="w-4 h-4" />
+                    </button>
+
+                    <div className="w-px h-6 bg-gray-300 mx-2"></div>
+
+                    <button
+                      onClick={() => execCommand('insertUnorderedList')}
+                      className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Liste"
+                    >
+                      <List className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => execCommand('insertOrderedList')}
+                      className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Numaralı liste"
+                    >
+                      <ListOrdered className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => execCommand('formatBlock', 'blockquote')}
+                      className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Alıntı"
+                    >
+                      <Quote className="w-4 h-4" />
+                    </button>
+
+                    <div className="w-px h-6 bg-gray-300 mx-2"></div>
+
+                    <button
+                      onClick={() => setIsImageModalOpen(true)}
+                      className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="Görsel ekle"
+                    >
+                      <ImageIcon className="w-4 h-4" />
+                    </button>
+
+                    <div className="w-px h-6 bg-gray-300 mx-2"></div>
+
+                    {/* Heading Dropdown */}
+                    <select
+                      onChange={(e) => execCommand('formatBlock', e.target.value)}
+                      className="px-3 py-1 border border-gray-300 rounded-lg text-sm text-gray-900"
+                      defaultValue=""
+                    >
+                      <option value="">Format</option>
+                      <option value="h1">Başlık 1</option>
+                      <option value="h2">Başlık 2</option>
+                      <option value="h3">Başlık 3</option>
+                      <option value="h4">Başlık 4</option>
+                      <option value="p">Paragraf</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Content Editor */}
+                <div
+                  ref={contentRef}
+                  contentEditable
+                  dangerouslySetInnerHTML={{ __html: articleData.content }}
+                  onInput={(e) => handleInputChange('content', e.target.innerHTML)}
+                  className="min-h-[500px] p-6 text-gray-900 outline-none prose max-w-none"
+                  placeholder="Makale içeriğinizi buraya yazın..."
+                  style={{
+                    lineHeight: '1.8',
+                    fontSize: '16px'
+                  }}
+                />
+              </div>
+            </>
+          ) : (
+            /* Settings Tab */
+            <div className="space-y-6">
+              {/* Basic Info */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Temel Bilgiler</h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Makale Özeti
+                    </label>
+                    <textarea
+                      value={articleData.excerpt}
+                      onChange={(e) => handleInputChange('excerpt', e.target.value)}
+                      className="w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                      rows="3"
+                      placeholder="Makale özetini buraya yazın..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Kategori
+                    </label>
+                    <select
+                      value={articleData.category}
+                      onChange={(e) => handleInputChange('category', e.target.value)}
+                      className="w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                    >
+                      <option value="genel">Genel</option>
+                      <option value="aile-hukuku">Aile Hukuku</option>
+                      <option value="ceza-hukuku">Ceza Hukuku</option>
+                      <option value="is-hukuku">İş Hukuku</option>
+                      <option value="ticaret-hukuku">Ticaret Hukuku</option>
+                      <option value="idare-hukuku">İdare Hukuku</option>
+                      <option value="icra-hukuku">İcra Hukuku</option>
+                      <option value="gayrimenkul-hukuku">Gayrimenkul Hukuku</option>
+                      <option value="miras-hukuku">Miras Hukuku</option>
+                      <option value="kvkk">KVKK</option>
+                      <option value="sigorta-hukuku">Sigorta Hukuku</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Öne Çıkan Görsel
+                    </label>
+                    <div className="flex items-center gap-3">
                       <input
                         type="text"
-                        value={articleData.slug}
-                        onChange={(e) => handleInputChange('slug', e.target.value)}
-                        className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                        placeholder="makale-url-slug"
+                        value={articleData.featuredImage}
+                        onChange={(e) => handleInputChange('featuredImage', e.target.value)}
+                        placeholder="Görsel URL'si"
+                        className="flex-1 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                       />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Rich Text Editor Toolbar */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                  <div className="border-b border-gray-200 p-4">
-                    <div className="flex flex-wrap items-center gap-2">
                       <button
-                        onClick={() => execCommand('bold')}
-                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
-                        title="Kalın (Ctrl+B)"
+                        onClick={() => setIsImageModalOpen(true)}
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
                       >
-                        <Bold className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => execCommand('italic')}
-                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
-                        title="İtalik (Ctrl+I)"
-                      >
-                        <Italic className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => execCommand('underline')}
-                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
-                        title="Altı Çizgili (Ctrl+U)"
-                      >
-                        <Underline className="w-5 h-5" />
-                      </button>
-                      
-                      <div className="w-px h-6 bg-gray-300 mx-2" />
-                      
-                      <button
-                        onClick={() => execCommand('formatBlock', 'h2')}
-                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
-                        title="Başlık 2"
-                      >
-                        <Heading2 className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => execCommand('formatBlock', 'h3')}
-                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
-                        title="Başlık 3"
-                      >
-                        <Heading3 className="w-5 h-5" />
-                      </button>
-                      
-                      <div className="w-px h-6 bg-gray-300 mx-2" />
-                      
-                      <button
-                        onClick={() => execCommand('insertUnorderedList')}
-                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
-                        title="Madde İşaretli Liste"
-                      >
-                        <List className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => execCommand('insertOrderedList')}
-                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
-                        title="Numaralı Liste"
-                      >
-                        <ListOrdered className="w-5 h-5" />
-                      </button>
-                      
-                      <div className="w-px h-6 bg-gray-300 mx-2" />
-                      
-                      <button
-                        onClick={() => {
-                          const url = prompt('Link URL:');
-                          if (url) execCommand('createLink', url);
-                        }}
-                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
-                        title="Link Ekle"
-                      >
-                        <Link className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => execCommand('formatBlock', 'blockquote')}
-                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
-                        title="Alıntı"
-                      >
-                        <Quote className="w-5 h-5" />
+                        <Upload className="w-4 h-4" />
                       </button>
                     </div>
+                    {articleData.featuredImage && (
+                      <div className="mt-2">
+                        <Image 
+                          src={articleData.featuredImage} 
+                          alt="Öne çıkan görsel" 
+                          width={128}
+                          height={80}
+                          className="w-32 h-20 object-cover rounded border"
+                        />
+                      </div>
+                    )}
                   </div>
 
-                  {/* İçerik Editörü */}
-                  <div
-                    ref={contentRef}
-                    contentEditable
-                    className="min-h-96 p-6 outline-none prose prose-lg max-w-none"
-                    style={{ minHeight: '400px' }}
-                    onInput={(e) => handleInputChange('content', e.target.innerHTML)}
-                    dangerouslySetInnerHTML={{ __html: articleData.content }}
-                    placeholder="Makale içeriğinizi buraya yazın..."
-                  />
-                </div>
-
-                {/* Özet */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Makale Özeti <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    value={articleData.excerpt}
-                    onChange={(e) => handleInputChange('excerpt', e.target.value)}
-                    rows={3}
-                    className="w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Makalenizin kısa bir özeti (maksimum 300 karakter)"
-                    maxLength={300}
-                  />
-                  <div className="text-right text-sm text-gray-500 mt-1">
-                    {articleData.excerpt.length}/300
-                  </div>
-                </div>
-              </>
-            ) : (
-              /* Önizleme Modu */
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-                <article className="prose prose-lg max-w-none">
-                  <header>
-                    <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-4">
-                      {categories.find(cat => cat.value === articleData.category)?.label}
-                    </span>
-                    <h1 className="text-4xl font-bold text-gray-900 leading-tight">
-                      {articleData.title || 'Başlık giriniz'}
-                    </h1>
-                    <div className="flex items-center space-x-4 text-gray-600 mt-4 not-prose">
-                      <span>{readingTime} dakika okuma</span>
-                      <span>•</span>
-                      <span>{wordCount} kelime</span>
-                    </div>
-                  </header>
-                  
-                  {articleData.excerpt && (
-                    <div className="text-xl text-gray-600 font-medium border-l-4 border-blue-500 pl-6 my-8 not-prose">
-                      {articleData.excerpt}
-                    </div>
-                  )}
-                  
-                  <div dangerouslySetInnerHTML={{ __html: articleData.content || '<p>İçerik giriniz...</p>' }} />
-                </article>
-              </div>
-            )}
-          </div>
-
-          {/* Yan Panel */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* SEO & Okunabilirlik Skorları */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <Target className="w-5 h-5 mr-2" />
-                Analiz Skorları
-              </h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">SEO Skoru</span>
-                    <span className={`px-2 py-1 text-xs font-bold rounded border ${getScoreColor(seoScore)}`}>
-                      {seoScore}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        seoScore >= 80 ? 'bg-green-500' : seoScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                      }`}
-                      style={{ width: `${seoScore}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Okunabilirlik</span>
-                    <span className={`px-2 py-1 text-xs font-bold rounded border ${getScoreColor(readabilityScore)}`}>
-                      {readabilityScore}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        readabilityScore >= 80 ? 'bg-green-500' : readabilityScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                      }`}
-                      style={{ width: `${readabilityScore}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* İstatistikler */}
-              <div className="mt-6 pt-4 border-t border-gray-200">
-                <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-600">Kelime:</span>
-                    <span className="font-medium ml-1">{wordCount}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Okuma:</span>
-                    <span className="font-medium ml-1">{readingTime} dk</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Yayın Ayarları */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <Settings className="w-5 h-5 mr-2" />
-                Yayın Ayarları
-              </h3>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Kategori</label>
-                  <select
-                    value={articleData.category}
-                    onChange={(e) => handleInputChange('category', e.target.value)}
-                    className="w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    {categories.map(cat => (
-                      <option key={cat.value} value={cat.value}>{cat.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={articleData.allowComments}
-                      onChange={(e) => handleInputChange('allowComments', e.target.checked)}
-                      className="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">Yorumlara izin ver</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* SEO Ayarları */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <Zap className="w-5 h-5 mr-2" />
-                SEO Ayarları
-              </h3>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ana Anahtar Kelime
-                  </label>
-                  <input
-                    type="text"
-                    value={articleData.focusKeyword}
-                    onChange={(e) => handleInputChange('focusKeyword', e.target.value)}
-                    className="w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="örn: boşanma davası"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Meta Başlık
-                  </label>
-                  <input
-                    type="text"
-                    value={articleData.metaTitle}
-                    onChange={(e) => handleInputChange('metaTitle', e.target.value)}
-                    className="w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="SEO başlığı (60 karakter ideal)"
-                    maxLength={60}
-                  />
-                  <div className="text-right text-sm text-gray-500 mt-1">
-                    {articleData.metaTitle.length}/60
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Meta Açıklama
-                  </label>
-                  <textarea
-                    value={articleData.metaDescription}
-                    onChange={(e) => handleInputChange('metaDescription', e.target.value)}
-                    rows={3}
-                    className="w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="SEO açıklaması (160 karakter ideal)"
-                    maxLength={160}
-                  />
-                  <div className="text-right text-sm text-gray-500 mt-1">
-                    {articleData.metaDescription.length}/160
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={articleData.allowComments}
+                        onChange={(e) => handleInputChange('allowComments', e.target.checked)}
+                        className="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Yorumlara izin ver</span>
+                    </label>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Etiketler */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <Tag className="w-5 h-5 mr-2" />
-                Etiketler
-              </h3>
-
-              <div className="space-y-3">
-                <div className="flex">
-                  <input
-                    type="text"
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                    className="flex-1 border border-gray-300 rounded-l-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Etiket ekle"
-                  />
+              {/* SEO Settings */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <Zap className="w-5 h-5 mr-2" />
+                    SEO Ayarları
+                  </h3>
                   <button
-                    onClick={addTag}
-                    className="px-3 py-2 border border-l-0 border-gray-300 rounded-r-md bg-gray-50 text-gray-700 hover:bg-gray-100"
+                    onClick={() => setShowSEOAnalysis(!showSEOAnalysis)}
+                    className="text-sm text-blue-600 hover:text-blue-800"
                   >
-                    <Plus className="w-5 h-5" />
+                    {showSEOAnalysis ? 'Analizi Gizle' : 'SEO Analizi'}
                   </button>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  {articleData.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
-                    >
-                      {tag}
-                      <button
-                        onClick={() => removeTag(tag)}
-                        className="ml-1 text-blue-600 hover:text-blue-800"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
+                {showSEOAnalysis && (
+                  <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                    <h4 className="font-medium text-gray-900 mb-3">SEO Analizi</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2">
+                        {seoAnalysis.titleLength >= 30 && seoAnalysis.titleLength <= 60 ? 
+                          <CheckCircle className="w-4 h-4 text-green-500" /> : 
+                          <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                        }
+                        <span className="text-gray-700">Başlık uzunluğu: {seoAnalysis.titleLength} karakter</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        {seoAnalysis.metaDescLength >= 120 && seoAnalysis.metaDescLength <= 160 ? 
+                          <CheckCircle className="w-4 h-4 text-green-500" /> : 
+                          <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                        }
+                        <span className="text-gray-700">Meta açıklama uzunluğu: {seoAnalysis.metaDescLength} karakter</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        {seoAnalysis.focusKeywordInTitle ? 
+                          <CheckCircle className="w-4 h-4 text-green-500" /> : 
+                          <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                        }
+                        <span className="text-gray-700">Odak anahtar kelime başlıkta: {seoAnalysis.focusKeywordInTitle ? 'Evet' : 'Hayır'}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Meta Başlık
+                    </label>
+                    <input
+                      type="text"
+                      value={articleData.metaTitle}
+                      onChange={(e) => handleInputChange('metaTitle', e.target.value)}
+                      className="w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                      placeholder="SEO için optimize edilmiş başlık"
+                    />
+                    <div className="text-xs text-gray-500 mt-1">
+                      {articleData.metaTitle.length}/60 karakter
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Meta Açıklama
+                    </label>
+                    <textarea
+                      value={articleData.metaDescription}
+                      onChange={(e) => handleInputChange('metaDescription', e.target.value)}
+                      className="w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                      rows="3"
+                      placeholder="Arama motorları için açıklama"
+                    />
+                    <div className="text-xs text-gray-500 mt-1">
+                      {articleData.metaDescription.length}/160 karakter
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Ana Anahtar Kelime
+                    </label>
+                    <input
+                      type="text"
+                      value={articleData.focusKeyword}
+                      onChange={(e) => handleInputChange('focusKeyword', e.target.value)}
+                      className="w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                      placeholder="örn: boşanma davası"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Etiketler
+                    </label>
+                    <input
+                      type="text"
+                      value={Array.isArray(articleData.tags) ? articleData.tags.join(', ') : ''}
+                      onChange={(e) => handleInputChange('tags', e.target.value.split(',').map(t => t.trim()).filter(Boolean))}
+                      className="w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                      placeholder="etiket1, etiket2, etiket3"
+                    />
+                    <div className="text-xs text-gray-500 mt-1">
+                      Etiketleri virgülle ayırın
+                    </div>
+                  </div>
                 </div>
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar */}
+        <div className="xl:col-span-1">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Makale Bilgileri</h3>
+            
+            <div className="space-y-4 text-sm">
+              <div>
+                <span className="text-gray-500">Durum:</span>
+                <p className="font-medium text-gray-900">
+                  {articleData.status === 'draft' ? 'Taslak' :
+                   articleData.status === 'published' ? 'Yayında' :
+                   articleData.status === 'scheduled' ? 'Zamanlanmış' : 'Arşiv'}
+                </p>
+              </div>
+              
+              <div>
+                <span className="text-gray-500">Kelime Sayısı:</span>
+                <p className="font-medium text-gray-900">
+                  ~{(contentRef.current?.textContent || '').split(' ').length} kelime
+                </p>
+              </div>
+              
+              <div>
+                <span className="text-gray-500">Okuma Süresi:</span>
+                <p className="font-medium text-gray-900">
+                  ~{Math.ceil(((contentRef.current?.textContent || '').split(' ').length || 0) / 200)} dakika
+                </p>
+              </div>
+
+              {mode === 'edit' && (
+                <div>
+                  <span className="text-gray-500">Son Güncelleme:</span>
+                  <p className="font-medium text-gray-900">
+                    {new Date(initialData.updatedAt || Date.now()).toLocaleDateString('tr-TR')}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Actions */}
+            <div className="mt-6 space-y-2">
+              <button
+                onClick={() => setActiveTab(activeTab === 'editor' ? 'settings' : 'editor')}
+                className="w-full px-4 py-2 text-left text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                {activeTab === 'editor' ? 'Ayarlara Git' : 'Editöre Dön'}
+              </button>
+              
+              <button
+                onClick={() => setIsImageModalOpen(true)}
+                className="w-full px-4 py-2 text-left text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2"
+              >
+                <ImageIcon className="w-4 h-4" />
+                Görsel Ekle
+              </button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Image Upload Modal */}
+      <ImageUploadModal
+        isOpen={isImageModalOpen}
+        onClose={() => setIsImageModalOpen(false)}
+        onImageSelect={handleImageSelect}
+      />
     </div>
   );
-};
-
-export default ArticleEditor;
+}

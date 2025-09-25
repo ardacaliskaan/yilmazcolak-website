@@ -1,406 +1,348 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
-  FileText, 
   Plus, 
   Search, 
   Filter, 
-  Eye, 
-  Edit, 
-  Trash2, 
   Calendar, 
-  User, 
-  TrendingUp,
-  BarChart3,
-  Globe,
-  CheckCircle,
+  Eye, 
+  Edit2, 
+  Trash2, 
+  FileText,
+  User,
   Clock,
-  Archive,
-  MoreVertical,
-  Target,
-  Zap,
-  BookOpen,
   Star,
-  ArrowUpDown
+  MoreVertical,
+  ExternalLink,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Archive,
+  RefreshCw
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
-// Mock data - gerçek uygulamada API'den gelecek
-const mockArticles = [
-  {
-    id: 1,
-    title: "Boşanma Davalarında Nafaka Hakları ve Hesaplama Yöntemleri",
-    slug: "bosanma-davalarinda-nafaka-haklari",
-    excerpt: "Boşanma sürecinde nafaka haklarının belirlenmesi, hesaplama kriterleri ve yasal düzenlemeler hakkında kapsamlı rehber.",
-    category: "aile-hukuku",
-    categoryName: "Aile Hukuku",
-    authorName: "Av. Murat YILMAZ",
-    status: "published",
-    publishedAt: "2025-01-15T10:00:00Z",
-    createdAt: "2025-01-10T09:00:00Z",
-    updatedAt: "2025-01-15T10:00:00Z",
-    readingTime: 8,
-    viewCount: 1245,
-    seoScore: 85,
-    readabilityScore: 78,
-    wordCount: 1650,
-    isFeatured: true
-  },
-  {
-    id: 2,
-    title: "İş Kazası Tazminat Başvuru Süreci ve Gerekli Belgeler",
-    slug: "is-kazasi-tazminat-basvuru-sureci",
-    excerpt: "İş kazası sonrası tazminat hakkınızı nasıl kullanacağınız, başvuru süreci ve gerekli evraklar.",
-    category: "is-hukuku",
-    categoryName: "İş Hukuku",
-    authorName: "Av. Hasan ÇOLAK",
-    status: "draft",
-    publishedAt: null,
-    createdAt: "2025-01-20T14:00:00Z",
-    updatedAt: "2025-01-22T16:30:00Z",
-    readingTime: 12,
-    viewCount: 0,
-    seoScore: 67,
-    readabilityScore: 82,
-    wordCount: 2100,
-    isFeatured: false
-  },
-  {
-    id: 3,
-    title: "Tapu İptali Davası Açma Koşulları ve Süreci",
-    slug: "tapu-iptali-davasi-kosullari",
-    excerpt: "Tapu kayıtlarının iptali için hangi koşullarda dava açılabileceği ve yasal süreç.",
-    category: "gayrimenkul-hukuku",
-    categoryName: "Gayrimenkul Hukuku",
-    authorName: "Av. Murat YILMAZ",
-    status: "published",
-    publishedAt: "2025-01-18T11:30:00Z",
-    createdAt: "2025-01-16T10:00:00Z",
-    updatedAt: "2025-01-18T11:30:00Z",
-    readingTime: 10,
-    viewCount: 892,
-    seoScore: 91,
-    readabilityScore: 75,
-    wordCount: 1890,
-    isFeatured: false
-  },
-  {
-    id: 4,
-    title: "KVKK İhlali Cezaları ve Koruma Yöntemleri 2025",
-    slug: "kvkk-ihlali-cezalari-koruma",
-    excerpt: "Kişisel Verileri Koruma Kanunu ihlallerinde uygulanan cezalar ve korunma yolları.",
-    category: "kvkk",
-    categoryName: "KVKK",
-    authorName: "Av. Zeynep ÜRÜŞAN",
-    status: "scheduled",
-    publishedAt: null,
-    createdAt: "2024-12-15T14:00:00Z",
-    updatedAt: "2024-12-20T09:00:00Z",
-    scheduledAt: "2025-01-25T09:00:00Z",
-    readingTime: 6,
-    viewCount: 0,
-    seoScore: 79,
-    readabilityScore: 88,
-    wordCount: 1200,
-    isFeatured: true
-  },
-  {
-    id: 5,
-    title: "Ceza Davalarında Avukat Seçimi ve Süreç Yönetimi",
-    slug: "ceza-davalarinda-avukat-secimi",
-    excerpt: "Ceza davalarında doğru avukat seçimi, savunma stratejileri ve süreç boyunca dikkat edilecek hususlar.",
-    category: "ceza-hukuku",
-    categoryName: "Ceza Hukuku",
-    authorName: "Av. Hasan ÇOLAK",
-    status: "archived",
-    publishedAt: "2024-11-20T09:00:00Z",
-    createdAt: "2024-11-15T14:00:00Z",
-    updatedAt: "2024-11-20T09:00:00Z",
-    readingTime: 15,
-    viewCount: 2341,
-    seoScore: 88,
-    readabilityScore: 72,
-    wordCount: 2850,
-    isFeatured: false
-  }
-];
-
-const categories = [
-  { value: 'all', label: 'Tüm Kategoriler', color: 'gray' },
-  { value: 'aile-hukuku', label: 'Aile Hukuku', color: 'blue' },
-  { value: 'ceza-hukuku', label: 'Ceza Hukuku', color: 'red' },
-  { value: 'is-hukuku', label: 'İş Hukuku', color: 'green' },
-  { value: 'ticaret-hukuku', label: 'Ticaret Hukuku', color: 'purple' },
-  { value: 'gayrimenkul-hukuku', label: 'Gayrimenkul Hukuku', color: 'teal' },
-  { value: 'kvkk', label: 'KVKK', color: 'cyan' }
-];
-
-const statusOptions = [
-  { value: 'all', label: 'Tüm Durumlar', color: 'gray' },
-  { value: 'draft', label: 'Taslak', color: 'yellow' },
-  { value: 'published', label: 'Yayında', color: 'green' },
-  { value: 'scheduled', label: 'Zamanlanmış', color: 'blue' },
-  { value: 'archived', label: 'Arşiv', color: 'gray' }
-];
-
-const ArticlesManagement = () => {
+export default function AdminArticlesPage() {
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [sortBy, setSortBy] = useState('updatedAt');
-  const [sortOrder, setSortOrder] = useState('desc');
-  const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState('updatedAt-desc');
+  const [pagination, setPagination] = useState(null);
+  const [stats, setStats] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [error, setError] = useState(null);
+  
+  const router = useRouter();
 
-  // Filtrelenmiş ve sıralanmış makaleler
-  const filteredAndSortedArticles = useMemo(() => {
-    let filtered = mockArticles.filter(article => {
-      const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           article.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           article.authorName.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesCategory = selectedCategory === 'all' || article.category === selectedCategory;
-      const matchesStatus = selectedStatus === 'all' || article.status === selectedStatus;
-      
-      return matchesSearch && matchesCategory && matchesStatus;
-    });
-
-    // Sıralama
-    filtered.sort((a, b) => {
-      let aVal = a[sortBy];
-      let bVal = b[sortBy];
-
-      // Tarih sıralaması için
-      if (sortBy.includes('At')) {
-        aVal = new Date(aVal || 0);
-        bVal = new Date(bVal || 0);
-      }
-
-      if (sortOrder === 'asc') {
-        return aVal > bVal ? 1 : -1;
-      } else {
-        return aVal < bVal ? 1 : -1;
-      }
-    });
-
-    return filtered;
-  }, [searchTerm, selectedCategory, selectedStatus, sortBy, sortOrder]);
-
-  // İstatistikler
-  const stats = useMemo(() => {
-    return {
-      total: mockArticles.length,
-      published: mockArticles.filter(a => a.status === 'published').length,
-      draft: mockArticles.filter(a => a.status === 'draft').length,
-      scheduled: mockArticles.filter(a => a.status === 'scheduled').length,
-      archived: mockArticles.filter(a => a.status === 'archived').length,
-      totalViews: mockArticles.reduce((sum, article) => sum + article.viewCount, 0),
-      avgSeoScore: Math.round(mockArticles.reduce((sum, article) => sum + article.seoScore, 0) / mockArticles.length),
-      avgReadabilityScore: Math.round(mockArticles.reduce((sum, article) => sum + article.readabilityScore, 0) / mockArticles.length)
-    };
-  }, []);
-
+  // Makale durumu badge'ı
   const getStatusBadge = (status) => {
-    const statusMap = {
-      'draft': { label: 'Taslak', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-      'published': { label: 'Yayında', color: 'bg-green-100 text-green-800 border-green-200' },
-      'scheduled': { label: 'Zamanlanmış', color: 'bg-blue-100 text-blue-800 border-blue-200' },
-      'archived': { label: 'Arşiv', color: 'bg-gray-100 text-gray-800 border-gray-200' }
+    const badges = {
+      'draft': { 
+        label: 'Taslak', 
+        color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+        icon: Edit2
+      },
+      'published': { 
+        label: 'Yayında', 
+        color: 'bg-green-100 text-green-800 border-green-200',
+        icon: CheckCircle
+      },
+      'archived': { 
+        label: 'Arşiv', 
+        color: 'bg-gray-100 text-gray-800 border-gray-200',
+        icon: Archive
+      },
+      'scheduled': { 
+        label: 'Zamanlanmış', 
+        color: 'bg-blue-100 text-blue-800 border-blue-200',
+        icon: Clock
+      }
     };
-    return statusMap[status] || statusMap.draft;
+    return badges[status] || badges['draft'];
   };
 
-  const getScoreBadge = (score, type = 'seo') => {
-    let colorClass = '';
-    if (score >= 80) colorClass = 'bg-green-100 text-green-800 border-green-200';
-    else if (score >= 60) colorClass = 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    else colorClass = 'bg-red-100 text-red-800 border-red-200';
-    
-    return colorClass;
+  // Kategori isimlerini almak için
+  const getCategoryName = (category) => {
+    const categoryMap = {
+      'aile-hukuku': 'Aile Hukuku',
+      'ceza-hukuku': 'Ceza Hukuku',
+      'is-hukuku': 'İş Hukuku',
+      'ticaret-hukuku': 'Ticaret Hukuku',
+      'idare-hukuku': 'İdare Hukuku',
+      'icra-hukuku': 'İcra Hukuku',
+      'gayrimenkul-hukuku': 'Gayrimenkul Hukuku',
+      'miras-hukuku': 'Miras Hukuku',
+      'kvkk': 'KVKK',
+      'sigorta-hukuku': 'Sigorta Hukuku',
+      'genel': 'Genel'
+    };
+    return categoryMap[category] || 'Genel';
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Henüz yok';
-    return new Date(dateString).toLocaleDateString('tr-TR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  // View count formatı
+  const formatViewCount = (count) => {
+    if (count >= 1000) {
+      return `${(count / 1000).toFixed(1)}k`;
+    }
+    return count?.toString() || '0';
   };
 
-  const formatViews = (count) => {
-    if (count >= 1000) return `${(count / 1000).toFixed(1)}k`;
-    return count.toString();
+  // Makaleleri getir
+  const fetchArticles = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: '10'
+      });
+
+      if (searchTerm) params.append('search', searchTerm);
+      if (selectedCategory !== 'all') params.append('category', selectedCategory);
+      if (selectedStatus !== 'all') params.append('status', selectedStatus);
+
+      const [sortField, sortOrder] = sortBy.split('-');
+      params.append('sortBy', sortField);
+      params.append('sortOrder', sortOrder);
+
+      console.log('Fetching articles with params:', params.toString());
+
+      const response = await fetch(`/api/admin/articles?${params}`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          router.push('/admin/login');
+          return;
+        }
+        throw new Error(`API hatası: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('API Response:', data);
+      
+      if (data.success) {
+        setArticles(data.articles || []);
+        setPagination(data.pagination || null);
+        setStats(data.stats || {});
+        console.log(`Loaded ${data.articles?.length || 0} articles`);
+      } else {
+        throw new Error(data.message || 'Bilinmeyen API hatası');
+      }
+    } catch (error) {
+      console.error('Fetch error:', error);
+      setError(error.message);
+      setArticles([]);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Makale sil
+  const handleDeleteArticle = async (articleId, articleTitle) => {
+    if (!confirm(`"${articleTitle}" başlıklı makaleyi silmek istediğinize emin misiniz?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/articles/${articleId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        console.log('Makale başarıyla silindi');
+        fetchArticles(); // Listeyi yenile
+      } else {
+        console.error('Delete error:', data.message);
+        alert('Silme işlemi başarısız: ' + data.message);
+      }
+    } catch (error) {
+      console.error('Delete request error:', error);
+      alert('Silme işlemi sırasında hata oluştu');
+    }
+  };
+
+  // İlk yükleme
+  useEffect(() => {
+    fetchArticles();
+  }, [currentPage, selectedCategory, selectedStatus, sortBy]);
+
+  // Arama debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setCurrentPage(1); // Reset to first page on search
+      if (searchTerm !== '') {
+        fetchArticles();
+      } else {
+        fetchArticles();
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]); // fetchArticles'ı dependency'den çıkardık çünkü searchTerm değiştiğinde çağrılıyor
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 p-6">
+                <div className="h-16 bg-gray-200 rounded"></div>
+              </div>
+            ))}
+          </div>
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-white rounded-xl border border-gray-200 p-6">
+                <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+                <div className="space-y-3">
+                  <div className="h-4 bg-gray-200 rounded"></div>
+                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-red-900 mb-2">Hata Oluştu</h3>
+          <p className="text-red-700 mb-4">{error}</p>
+          <button
+            onClick={fetchArticles}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Tekrar Dene
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
-                <FileText className="w-6 h-6 text-white" />
-              </div>
-              Makale Yönetimi
-            </h1>
+            <h1 className="text-3xl font-bold text-gray-900">Makale Yönetimi</h1>
             <p className="text-gray-600 mt-2">
-              SEO odaklı makalelerinizi oluşturun, düzenleyin ve yönetin
+              {pagination?.totalCount || 0} makale • {stats.published?.count || 0} yayında • {stats.draft?.count || 0} taslak
             </p>
           </div>
           
           <Link
             href="/admin/articles/create"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
+            className="flex items-center gap-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg"
           >
             <Plus className="w-5 h-5" />
-            Yeni Makale Yaz
+            Yeni Makale
           </Link>
         </div>
-      </div>
 
-      {/* İstatistik Kartları */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Toplam Makale</p>
-              <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <FileText className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-          <div className="flex items-center mt-4 text-sm">
-            <span className="text-green-600">+{stats.published} yayında</span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Toplam Görüntülenme</p>
-              <p className="text-3xl font-bold text-gray-900">{formatViews(stats.totalViews)}</p>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <Eye className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-          <div className="flex items-center mt-4 text-sm">
-            <span className="text-gray-600">Ortalama {Math.round(stats.totalViews / stats.published)} / makale</span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Ortalama SEO Skoru</p>
-              <p className="text-3xl font-bold text-gray-900">{stats.avgSeoScore}%</p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <Target className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-          <div className="flex items-center mt-4 text-sm">
-            <span className={`${stats.avgSeoScore >= 80 ? 'text-green-600' : stats.avgSeoScore >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-              {stats.avgSeoScore >= 80 ? 'Mükemmel' : stats.avgSeoScore >= 60 ? 'İyi' : 'Geliştirilmeli'}
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Okunabilirlik</p>
-              <p className="text-3xl font-bold text-gray-900">{stats.avgReadabilityScore}%</p>
-            </div>
-            <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-              <BookOpen className="w-6 h-6 text-orange-600" />
-            </div>
-          </div>
-          <div className="flex items-center mt-4 text-sm">
-            <span className="text-gray-600">Ortalama okuma kolaylığı</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Durum Özet Kartları */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {[
-          { status: 'published', count: stats.published, icon: CheckCircle, color: 'green' },
-          { status: 'draft', count: stats.draft, icon: Clock, color: 'yellow' },
-          { status: 'scheduled', count: stats.scheduled, icon: Calendar, color: 'blue' },
-          { status: 'archived', count: stats.archived, icon: Archive, color: 'gray' }
-        ].map(({ status, count, icon: Icon, color }) => (
-          <div 
-            key={status}
-            className={`bg-white rounded-lg border border-gray-200 p-4 cursor-pointer transition-all hover:shadow-md ${
-              selectedStatus === status ? 'ring-2 ring-blue-500' : ''
-            }`}
-            onClick={() => setSelectedStatus(selectedStatus === status ? 'all' : status)}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">{getStatusBadge(status).label}</p>
-                <p className="text-2xl font-bold text-gray-900">{count}</p>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          {Object.entries(stats).map(([status, data]) => {
+            const badge = getStatusBadge(status);
+            const IconComponent = badge.icon;
+            
+            return (
+              <div key={status} className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">{badge.label}</p>
+                    <p className="text-3xl font-bold text-gray-900">{data.count || 0}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {data.totalViews || 0} toplam görüntüleme
+                    </p>
+                  </div>
+                  <div className={`p-3 rounded-lg ${badge.color.replace('text-', 'bg-').replace('bg-', 'bg-opacity-20 bg-')}`}>
+                    <IconComponent className="w-8 h-8" />
+                  </div>
+                </div>
               </div>
-              <div className={`w-8 h-8 bg-${color}-100 rounded-lg flex items-center justify-center`}>
-                <Icon className={`w-4 h-4 text-${color}-600`} />
-              </div>
-            </div>
-          </div>
-        ))}
+            );
+          })}
+        </div>
       </div>
 
-      {/* Arama ve Filtreler */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
-        <div className="flex flex-col lg:flex-row gap-4">
+      {/* Filters */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Arama */}
-          <div className="flex-1 relative">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Makale başlığı, içerik veya yazar adı ile ara..."
+              placeholder="Makale ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-400"
             />
           </div>
 
-          {/* Kategori Filtresi */}
+          {/* Kategori */}
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
           >
-            {categories.map(cat => (
-              <option key={cat.value} value={cat.value}>{cat.label}</option>
-            ))}
+            <option value="all">Tüm Kategoriler</option>
+            <option value="aile-hukuku">Aile Hukuku</option>
+            <option value="ceza-hukuku">Ceza Hukuku</option>
+            <option value="is-hukuku">İş Hukuku</option>
+            <option value="ticaret-hukuku">Ticaret Hukuku</option>
+            <option value="idare-hukuku">İdare Hukuku</option>
+            <option value="icra-hukuku">İcra Hukuku</option>
+            <option value="gayrimenkul-hukuku">Gayrimenkul Hukuku</option>
+            <option value="miras-hukuku">Miras Hukuku</option>
+            <option value="kvkk">KVKK</option>
+            <option value="sigorta-hukuku">Sigorta Hukuku</option>
+            <option value="genel">Genel</option>
           </select>
 
-          {/* Durum Filtresi */}
+          {/* Durum */}
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
           >
-            {statusOptions.map(status => (
-              <option key={status.value} value={status.value}>{status.label}</option>
-            ))}
+            <option value="all">Tüm Durumlar</option>
+            <option value="draft">Taslak</option>
+            <option value="published">Yayında</option>
+            <option value="archived">Arşiv</option>
+            <option value="scheduled">Zamanlanmış</option>
           </select>
 
           {/* Sıralama */}
           <select
-            value={`${sortBy}-${sortOrder}`}
-            onChange={(e) => {
-              const [field, order] = e.target.value.split('-');
-              setSortBy(field);
-              setSortOrder(order);
-            }}
-            className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
           >
             <option value="updatedAt-desc">Son Güncelleme (Yeni → Eski)</option>
             <option value="updatedAt-asc">Son Güncelleme (Eski → Yeni)</option>
@@ -417,21 +359,24 @@ const ArticlesManagement = () => {
 
         {/* Sonuç sayısı */}
         <div className="mt-4 text-sm text-gray-600">
-          <span className="font-medium">{filteredAndSortedArticles.length}</span> makale gösteriliyor
+          <span className="font-medium text-gray-900">{articles.length}</span> makale gösteriliyor
           {(searchTerm || selectedCategory !== 'all' || selectedStatus !== 'all') && (
-            <span> (toplam {mockArticles.length} makale arasından filtrelendi)</span>
+            <span> (toplam {pagination?.totalCount || 0} makale arasından filtrelendi)</span>
           )}
         </div>
       </div>
 
       {/* Makale Listesi */}
       <div className="space-y-4">
-        {filteredAndSortedArticles.length === 0 ? (
+        {articles.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
             <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Makale bulunamadı</h3>
             <p className="text-gray-600 mb-6">
-              Arama kriterlerinizi değiştirin veya yeni bir makale oluşturun.
+              {searchTerm || selectedCategory !== 'all' || selectedStatus !== 'all' 
+                ? 'Arama kriterlerinizi değiştirin veya yeni bir makale oluşturun.'
+                : 'Henüz makale bulunmamaktadır. İlk makaleyi oluşturun.'
+              }
             </p>
             <Link
               href="/admin/articles/create"
@@ -442,128 +387,213 @@ const ArticlesManagement = () => {
             </Link>
           </div>
         ) : (
-          filteredAndSortedArticles.map((article) => (
-            <div key={article.id} className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-200">
-              <div className="p-6">
-                <div className="flex items-start justify-between">
-                  {/* Makale Bilgileri */}
-                  <div className="flex-1 pr-6">
-                    <div className="flex items-center gap-3 mb-3">
-                      {/* Durum Badge */}
-                      <span className={`px-3 py-1 text-xs font-medium rounded-full border ${getStatusBadge(article.status).color}`}>
-                        {getStatusBadge(article.status).label}
-                      </span>
-                      
-                      {/* Kategori */}
-                      <span className="px-3 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
-                        {article.categoryName}
-                      </span>
-
-                      {/* Featured Badge */}
-                      {article.isFeatured && (
-                        <span className="px-3 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded-full flex items-center gap-1">
-                          <Star className="w-3 h-3" />
-                          Öne Çıkan
+          articles.map((article) => {
+            const statusBadge = getStatusBadge(article.status);
+            const StatusIcon = statusBadge.icon;
+            
+            return (
+              <div key={article._id} className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-200">
+                <div className="p-6">
+                  <div className="flex items-start justify-between">
+                    {/* Makale Bilgileri */}
+                    <div className="flex-1 pr-6">
+                      <div className="flex items-center gap-3 mb-3">
+                        {/* Durum Badge */}
+                        <span className={`px-3 py-1 text-xs font-medium rounded-full border flex items-center gap-1 ${statusBadge.color}`}>
+                          <StatusIcon className="w-3 h-3" />
+                          {statusBadge.label}
                         </span>
+                        
+                        {/* Kategori */}
+                        <span className="px-3 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
+                          {getCategoryName(article.category)}
+                        </span>
+
+                        {/* Featured Badge */}
+                        {article.isFeatured && (
+                          <span className="px-3 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded-full flex items-center gap-1">
+                            <Star className="w-3 h-3" />
+                            Öne Çıkan
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Başlık */}
+                      <h3 className="text-xl font-bold text-gray-900 mb-3 hover:text-blue-600 transition-colors">
+                        <Link href={`/admin/articles/${article._id}/edit`}>
+                          {article.title}
+                        </Link>
+                      </h3>
+
+                      {/* Özet */}
+                      <p className="text-gray-600 mb-4 line-clamp-2">
+                        {article.excerpt}
+                      </p>
+
+                      {/* Meta Bilgiler */}
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <User className="w-4 h-4" />
+                          <span className="text-gray-700">{article.authorName || 'Bilinmiyor'}</span>
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-4 h-4" />
+                          <span className="text-gray-700">
+                            {article.publishedAt 
+                              ? new Date(article.publishedAt).toLocaleDateString('tr-TR')
+                              : new Date(article.createdAt).toLocaleDateString('tr-TR')
+                            }
+                          </span>
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Eye className="w-4 h-4" />
+                          <span className="text-gray-700">{formatViewCount(article.viewCount)} görüntüleme</span>
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          <span className="text-gray-700">{Math.ceil((article.wordCount || 0) / 200)} dk okuma</span>
+                        </span>
+                      </div>
+
+                      {/* SEO Bilgileri */}
+                      {(article.seoScore || article.readabilityScore) && (
+                        <div className="flex items-center gap-4 mt-3">
+                          {article.seoScore && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500">SEO:</span>
+                              <div className={`w-16 h-2 rounded-full ${
+                                article.seoScore >= 80 ? 'bg-green-200' : 
+                                article.seoScore >= 60 ? 'bg-yellow-200' : 'bg-red-200'
+                              }`}>
+                                <div 
+                                  className={`h-full rounded-full ${
+                                    article.seoScore >= 80 ? 'bg-green-500' : 
+                                    article.seoScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                                  }`}
+                                  style={{ width: `${article.seoScore}%` }}
+                                />
+                              </div>
+                              <span className="text-xs font-medium text-gray-700">{article.seoScore}%</span>
+                            </div>
+                          )}
+                          
+                          {article.readabilityScore && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500">Okunabilirlik:</span>
+                              <div className={`w-16 h-2 rounded-full ${
+                                article.readabilityScore >= 80 ? 'bg-green-200' : 
+                                article.readabilityScore >= 60 ? 'bg-yellow-200' : 'bg-red-200'
+                              }`}>
+                                <div 
+                                  className={`h-full rounded-full ${
+                                    article.readabilityScore >= 80 ? 'bg-green-500' : 
+                                    article.readabilityScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                                  }`}
+                                  style={{ width: `${article.readabilityScore}%` }}
+                                />
+                              </div>
+                              <span className="text-xs font-medium text-gray-700">{article.readabilityScore}%</span>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
 
-                    {/* Başlık */}
-                    <h3 className="text-xl font-bold text-gray-900 mb-3 hover:text-blue-600 transition-colors">
-                      <Link href={`/admin/articles/${article.id}/edit`}>
-                        {article.title}
-                      </Link>
-                    </h3>
-
-                    {/* Özet */}
-                    <p className="text-gray-600 mb-4 line-clamp-2">
-                      {article.excerpt}
-                    </p>
-
-                    {/* Meta Bilgiler */}
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <User className="w-4 h-4" />
-                        {article.authorName}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {article.publishedAt ? formatDate(article.publishedAt) : formatDate(article.updatedAt)}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {article.readingTime} dk okuma
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Eye className="w-4 h-4" />
-                        {formatViews(article.viewCount)} görüntülenme
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Sağ Taraf - Skorlar ve İşlemler */}
-                  <div className="flex flex-col items-end gap-4">
-                    {/* Skorlar */}
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-gray-600">SEO:</span>
-                        <span className={`px-2 py-1 text-xs font-bold rounded border ${getScoreBadge(article.seoScore, 'seo')}`}>
-                          {article.seoScore}%
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-gray-600">Okunabilirlik:</span>
-                        <span className={`px-2 py-1 text-xs font-bold rounded border ${getScoreBadge(article.readabilityScore, 'readability')}`}>
-                          {article.readabilityScore}%
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* İşlem Butonları */}
+                    {/* Action Buttons */}
                     <div className="flex items-center gap-2">
+                      {/* Görüntüle */}
+                      {article.status === 'published' && (
+                        <Link
+                          href={`/makaleler/${article.slug}`}
+                          target="_blank"
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Görüntüle"
+                        >
+                          <ExternalLink className="w-5 h-5" />
+                        </Link>
+                      )}
+
+                      {/* Düzenle */}
                       <Link
-                        href={`/makaleler/${article.slug}`}
-                        target="_blank"
-                        className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
-                        title="Önizle"
-                      >
-                        <Eye className="w-5 h-5" />
-                      </Link>
-                      
-                      <Link
-                        href={`/admin/articles/${article.id}/edit`}
-                        className="p-2 text-gray-400 hover:text-green-600 transition-colors"
+                        href={`/admin/articles/${article._id}/edit`}
+                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                         title="Düzenle"
                       >
-                        <Edit className="w-5 h-5" />
+                        <Edit2 className="w-5 h-5" />
                       </Link>
-                      
+
+                      {/* Sil */}
                       <button
-                        className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                        onClick={() => handleDeleteArticle(article._id, article.title)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         title="Sil"
-                        onClick={() => {
-                          if (confirm('Bu makaleyi silmek istediğinize emin misiniz?')) {
-                            // Silme işlemi
-                            console.log('Delete article:', article.id);
-                          }
-                        }}
                       >
                         <Trash2 className="w-5 h-5" />
-                      </button>
-                      
-                      <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                        <MoreVertical className="w-5 h-5" />
                       </button>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
+
+      {/* Pagination */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="mt-8 flex items-center justify-center">
+          <div className="flex items-center gap-2">
+            {/* Önceki */}
+            <button
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={!pagination.hasPrevPage}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                pagination.hasPrevPage
+                  ? 'text-blue-600 border border-blue-600 hover:bg-blue-50'
+                  : 'text-gray-400 border border-gray-300 cursor-not-allowed'
+              }`}
+            >
+              Önceki
+            </button>
+
+            {/* Sayfa numaraları */}
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                const pageNum = Math.max(1, currentPage - 2) + i;
+                if (pageNum <= pagination.totalPages) {
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`px-3 py-2 rounded-lg transition-colors ${
+                        pageNum === currentPage
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                }
+                return null;
+              })}
+            </div>
+
+            {/* Sonraki */}
+            <button
+              onClick={() => setCurrentPage(Math.min(pagination.totalPages, currentPage + 1))}
+              disabled={!pagination.hasNextPage}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                pagination.hasNextPage
+                  ? 'text-blue-600 border border-blue-600 hover:bg-blue-50'
+                  : 'text-gray-400 border border-gray-300 cursor-not-allowed'
+              }`}
+            >
+              Sonraki
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
-};
-
-export default ArticlesManagement;
+}
