@@ -142,7 +142,7 @@ const Breadcrumbs = ({ category, search }) => {
         {search && (
           <>
             <span>/</span>
-<span className="text-gray-900 font-medium">'{search}' araması</span>
+<span className="text-gray-900 font-medium">{`'${search}' araması`}</span>
           </>
         )}
       </nav>
