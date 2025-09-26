@@ -1,30 +1,28 @@
-// app/makaleler/page.js - Ana Makale Listesi Server Component
-import BlogListClient from './BlogListClient';
+// app/makaleler/page.js - SERVER COMPONENT (SEO + Metadata)
+import ArticlesClientPage from './ArticlesClientPage';
 
 // SEO Metadata
 export const metadata = {
-  title: 'Hukuk Makaleleri ve Rehberler | Yılmaz Çolak Hukuk Bürosu',
-  description: 'Aile hukuku, ceza hukuku, iş hukuku ve daha birçok alanda uzman avukatlarımızdan güncel hukuki makaleler ve rehberler. Hukuki bilgilerinizi artırın.',
+  title: 'Hukuk Makaleleri ve Uzman Rehberler | Yılmaz Çolak Hukuk Bürosu',
+  description: 'Aile hukuku, ceza hukuku, iş hukuku, ticaret hukuku ve daha birçok alanda uzman avukatlarımızdan güncel hukuki makaleler, rehberler ve analizler.',
   keywords: [
-    'hukuk makaleleri',
-    'avukat yazıları', 
-    'aile hukuku makaleleri',
-    'ceza hukuku yazıları',
-    'iş hukuku makaleleri',
-    'karabük avukat',
-    'hukuki bilgiler',
-    'yılmaz çolak hukuk',
-    'hukuk danışmanlığı',
-    'hukuki rehberler'
+    'hukuk makaleleri', 'avukat yazıları', 'aile hukuku makaleleri',
+    'ceza hukuku yazıları', 'iş hukuku makaleleri', 'ticaret hukuku rehberleri',
+    'idare hukuku', 'icra hukuku', 'gayrimenkul hukuku', 'miras hukuku',
+    'kvkk makaleleri', 'sigorta hukuku', 'karabük avukat', 'hukuki bilgiler',
+    'yılmaz çolak hukuk', 'hukuk danışmanlığı', 'hukuki rehberler'
   ].join(', '),
   
-  authors: [{ name: 'Yılmaz Çolak Hukuk Bürosu' }],
+  authors: [{ 
+    name: 'Yılmaz Çolak Hukuk Bürosu',
+    url: `${process.env.NEXT_PUBLIC_SITE_URL}/ekibimiz`
+  }],
   creator: 'Yılmaz Çolak Hukuk Bürosu',
   publisher: 'Yılmaz Çolak Hukuk Bürosu',
   
   openGraph: {
     title: 'Hukuk Makaleleri | Yılmaz Çolak Hukuk Bürosu',
-    description: 'Aile hukuku, ceza hukuku, iş hukuku ve daha birçok alanda uzman avukatlarımızdan güncel hukuki makaleler ve rehberler.',
+    description: 'Uzman avukatlarımızdan güncel hukuki makaleler, rehberler ve analizler.',
     url: `${process.env.NEXT_PUBLIC_SITE_URL}/makaleler`,
     siteName: 'Yılmaz Çolak Hukuk Bürosu',
     locale: 'tr_TR',
@@ -43,7 +41,7 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Hukuk Makaleleri | Yılmaz Çolak Hukuk Bürosu',
-    description: 'Aile hukuku, ceza hukuku, iş hukuku ve daha birçok alanda uzman avukatlarımızdan güncel hukuki makaleler.',
+    description: 'Uzman avukatlarımızdan güncel hukuki makaleler, rehberler ve analizler.',
     creator: '@yilmazcolakhukuk',
     site: '@yilmazcolakhukuk',
     images: [`${process.env.NEXT_PUBLIC_SITE_URL}/images/og-articles.jpg`]
@@ -65,7 +63,21 @@ export const metadata = {
   }
 };
 
-// Ana Server Component - BlogListClient'ı wrap eder
+// Server Component - SEO için
 export default function ArticlesPage({ searchParams }) {
-  return <BlogListClient searchParams={searchParams} />;
+  // Client component'i render et
+  return <ArticlesClientPage searchParams={searchParams} />;
 }
+
+/*
+===========================================
+DOSYA YAPISI:
+
+app/makaleler/
+├── page.js                    // BU DOSYA (Server Component)
+├── ArticlesClientPage.js      // Client Component (aşağıda)
+└── [slug]/
+    └── page.js               // Single article server component
+
+===========================================
+*/
