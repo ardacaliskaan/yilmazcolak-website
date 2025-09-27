@@ -1,6 +1,7 @@
+// components/admin/ImageUploadModal.js - Enhanced Version
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { 
   Upload,
@@ -13,7 +14,11 @@ import {
   Trash2,
   Eye,
   Copy,
-  Download
+  Download,
+  Grid,
+  Search,
+  Filter,
+  Plus
 } from 'lucide-react';
 
 const ImageUploadModal = ({ 
@@ -22,7 +27,8 @@ const ImageUploadModal = ({
   onImageSelect,
   uploadEndpoint = '/api/admin/upload',
   maxFileSize = 5 * 1024 * 1024, // 5MB
-  acceptedFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+  acceptedFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+  allowMultiple = false
 }) => {
   const [activeTab, setActiveTab] = useState('upload');
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -32,72 +38,106 @@ const ImageUploadModal = ({
   const [urlPreview, setUrlPreview] = useState(null);
   const [error, setError] = useState(null);
   const [dragActive, setDragActive] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [altText, setAltText] = useState('');
 
   const fileInputRef = useRef(null);
   const dropZoneRef = useRef(null);
 
+  // Load existing images on mount
+  useEffect(() => {
+    if (isOpen && activeTab === 'gallery') {
+      loadUploadedImages();
+    }
+  }, [isOpen, activeTab]);
+
+  // Load uploaded images from gallery
+  const loadUploadedImages = async () => {
+    try {
+      const response = await fetch('/api/admin/media', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setUploadedImages(data.images || []);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load images:', error);
+    }
+  };
+
   // Validate file
   const validateFile = useCallback((file) => {
     if (!acceptedFormats.includes(file.type)) {
-      throw new Error(`Desteklenmeyen dosya formatı. Desteklenenler: ${acceptedFormats.join(', ')}`);
+      throw new Error(`Desteklenmeyen dosya formatı. Desteklenenler: ${acceptedFormats.map(f => f.split('/')[1]).join(', ')}`);
     }
     
     if (file.size > maxFileSize) {
       const maxSizeMB = (maxFileSize / (1024 * 1024)).toFixed(1);
       throw new Error(`Dosya boyutu çok büyük. Maksimum: ${maxSizeMB}MB`);
     }
-    
+
     return true;
   }, [acceptedFormats, maxFileSize]);
 
-  // Upload file to server
+  // Upload file
   const uploadFile = useCallback(async (file) => {
     try {
-      validateFile(file);
-      setError(null);
       setIsUploading(true);
+      setError(null);
       setUploadProgress(0);
 
+      // Validate file
+      validateFile(file);
+
+      // Create form data
       const formData = new FormData();
       formData.append('image', file);
-      formData.append('type', 'article');
+      formData.append('type', 'article-image');
 
-      const xhr = new XMLHttpRequest();
-      
+      // Upload with progress tracking
       return new Promise((resolve, reject) => {
-        xhr.upload.addEventListener('progress', (e) => {
-          if (e.lengthComputable) {
-            const progress = (e.loaded / e.total) * 100;
-            setUploadProgress(Math.round(progress));
-          }
-        });
+        const xhr = new XMLHttpRequest();
 
-        xhr.addEventListener('load', () => {
-          if (xhr.status === 200) {
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const progress = Math.round((e.loaded / e.total) * 100);
+            setUploadProgress(progress);
+          }
+        };
+
+        xhr.onload = () => {
+          try {
             const response = JSON.parse(xhr.responseText);
-            if (response.success) {
-              const newImage = {
+            
+            if (xhr.status === 200 && response.success) {
+              const uploadedImage = {
                 id: Date.now(),
                 url: response.url,
-                filename: response.filename,
-                originalName: response.originalName || file.name,
-                size: response.size || file.size,
-                uploadedAt: new Date().toISOString()
+                originalName: file.name,
+                size: file.size,
+                type: file.type,
+                uploadedAt: new Date().toISOString(),
+                alt: ''
               };
               
-              setUploadedImages(prev => [...prev, newImage]);
-              resolve(response);
+              setUploadedImages(prev => [uploadedImage, ...prev]);
+              resolve(uploadedImage);
             } else {
-              reject(new Error(response.message || 'Upload başarısız'));
+              throw new Error(response.message || 'Yükleme başarısız');
             }
-          } else {
-            reject(new Error(`Server hatası: ${xhr.status}`));
+          } catch (error) {
+            reject(new Error('Sunucu yanıtı işlenemedi'));
           }
-        });
+        };
 
-        xhr.addEventListener('error', () => {
-          reject(new Error('Network hatası'));
-        });
+        xhr.onerror = () => {
+          reject(new Error('Ağ hatası oluştu'));
+        };
 
         xhr.open('POST', uploadEndpoint);
         xhr.send(formData);
@@ -116,15 +156,21 @@ const ImageUploadModal = ({
   const handleFileSelect = useCallback(async (files) => {
     const fileList = Array.from(files);
     
+    if (!allowMultiple && fileList.length > 1) {
+      setError('Sadece bir dosya seçebilirsiniz');
+      return;
+    }
+
     for (const file of fileList) {
       try {
         await uploadFile(file);
       } catch (error) {
         console.error('Upload error:', error);
         // Error is already set in uploadFile
+        break; // Stop uploading on first error
       }
     }
-  }, [uploadFile]);
+  }, [uploadFile, allowMultiple]);
 
   // Handle file input change
   const handleFileInputChange = useCallback((e) => {
@@ -134,7 +180,7 @@ const ImageUploadModal = ({
     }
   }, [handleFileSelect]);
 
-  // Handle drag events
+  // Drag and drop handlers
   const handleDrag = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -163,7 +209,7 @@ const ImageUploadModal = ({
     }
   }, [handleFileSelect]);
 
-  // Validate URL
+  // URL validation
   const handleUrlValidation = useCallback(async (url) => {
     if (!url) return;
 
@@ -201,7 +247,6 @@ const ImageUploadModal = ({
     setUrlInput(url);
     
     if (url) {
-      // Debounce URL validation
       clearTimeout(window.urlValidationTimeout);
       window.urlValidationTimeout = setTimeout(() => {
         handleUrlValidation(url);
@@ -215,18 +260,18 @@ const ImageUploadModal = ({
   // Select image
   const handleImageSelect = useCallback((imageData) => {
     if (onImageSelect) {
-      onImageSelect(imageData.url, imageData.originalName || '');
+      onImageSelect(imageData.url, altText || imageData.alt || imageData.originalName || '');
     }
-    onClose();
-  }, [onImageSelect, onClose]);
+    handleClose();
+  }, [onImageSelect, altText]);
 
   // Select URL image
   const handleUrlSelect = useCallback(() => {
     if (urlPreview && onImageSelect) {
-      onImageSelect(urlPreview.url, 'Harici görsel');
+      onImageSelect(urlPreview.url, altText || 'Harici görsel');
     }
-    onClose();
-  }, [urlPreview, onImageSelect, onClose]);
+    handleClose();
+  }, [urlPreview, onImageSelect, altText]);
 
   // Close modal
   const handleClose = useCallback(() => {
@@ -237,95 +282,99 @@ const ImageUploadModal = ({
     setError(null);
     setIsUploading(false);
     setUploadProgress(0);
+    setSelectedImage(null);
+    setAltText('');
+    setSearchTerm('');
     onClose();
   }, [onClose]);
 
-  // Copy URL to clipboard
-  const copyToClipboard = useCallback(async (text) => {
+  // Delete image
+  const handleDeleteImage = useCallback(async (imageId) => {
     try {
-      await navigator.clipboard.writeText(text);
-      // Could show a toast here
+      const response = await fetch(`/api/admin/media/${imageId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        setUploadedImages(prev => prev.filter(img => img.id !== imageId));
+      }
     } catch (error) {
-      console.error('Copy failed:', error);
+      console.error('Delete error:', error);
     }
   }, []);
+
+  // Filter images based on search
+  const filteredImages = uploadedImages.filter(image => 
+    image.originalName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    image.alt?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <ImageIcon className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-gray-900">Görsel Yöneticisi</h3>
-              <p className="text-sm text-gray-600">Görsel yükleyin veya URL ekleyin</p>
-            </div>
+        <div className="border-b border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-900">Görsel Yöneticisi</h2>
+            <button
+              onClick={handleClose}
+              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <button
-            onClick={handleClose}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-white rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="border-b border-gray-200 bg-gray-50">
-          <div className="flex">
-            <button 
+          
+          {/* Tabs */}
+          <div className="flex mt-4 border-b border-gray-200">
+            <button
               onClick={() => setActiveTab('upload')}
-              className={`flex-1 px-6 py-4 text-sm font-semibold transition-colors ${
-                activeTab === 'upload' 
-                  ? 'bg-white text-blue-600 border-b-2 border-blue-600' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                activeTab === 'upload'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
               <Upload className="w-4 h-4 inline mr-2" />
-              Dosya Yükle
+              Yükle
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('url')}
-              className={`flex-1 px-6 py-4 text-sm font-semibold transition-colors ${
-                activeTab === 'url' 
-                  ? 'bg-white text-blue-600 border-b-2 border-blue-600' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                activeTab === 'url'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
               <Link className="w-4 h-4 inline mr-2" />
-              URL Ekle
+              URL
             </button>
-            <button 
-              onClick={() => setActiveTab('gallery')}
-              className={`flex-1 px-6 py-4 text-sm font-semibold transition-colors ${
-                activeTab === 'gallery' 
-                  ? 'bg-white text-blue-600 border-b-2 border-blue-600' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            <button
+              onClick={() => {
+                setActiveTab('gallery');
+                loadUploadedImages();
+              }}
+              className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                activeTab === 'gallery'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              <Eye className="w-4 h-4 inline mr-2" />
-              Galeri ({uploadedImages.length})
+              <Grid className="w-4 h-4 inline mr-2" />
+              Galeri
             </button>
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-6 max-h-[60vh] overflow-y-auto">
-          {/* Error Display */}
+        <div className="flex-1 p-6 overflow-y-auto">
+          {/* Error Message */}
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-              <p className="text-red-700 text-sm">{error}</p>
-              <button
-                onClick={() => setError(null)}
-                className="ml-auto p-1 text-red-400 hover:text-red-600"
-              >
-                <X className="w-4 h-4" />
-              </button>
+            <div className="mb-4 p-3 bg-red-100 border border-red-200 rounded-lg flex items-center gap-2 text-red-800">
+              <AlertCircle className="w-4 h-4" />
+              {error}
             </div>
           )}
 
@@ -339,61 +388,57 @@ const ImageUploadModal = ({
                 onDragLeave={handleDragOut}
                 onDragOver={handleDrag}
                 onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${
-                  dragActive
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
-                }`}
+                className={`
+                  border-2 border-dashed rounded-xl p-8 text-center transition-colors
+                  ${dragActive 
+                    ? 'border-blue-400 bg-blue-50' 
+                    : 'border-gray-300 hover:border-gray-400'
+                  }
+                `}
               >
-                <div className="flex flex-col items-center gap-4">
-                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${
-                    dragActive ? 'bg-blue-100' : 'bg-gray-100'
-                  }`}>
-                    <Upload className={`w-8 h-8 ${dragActive ? 'text-blue-600' : 'text-gray-500'}`} />
-                  </div>
-                  
-                  <div>
-                    <p className="text-lg font-semibold text-gray-900 mb-2">
-                      {dragActive ? 'Dosyaları buraya bırakın' : 'Görsel dosyalarını yükleyin'}
-                    </p>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Dosya seçmek için tıklayın veya sürükleyip bırakın
-                    </p>
-                    <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
-                      <span>Maks: {(maxFileSize / (1024 * 1024)).toFixed(1)}MB</span>
-                      <span>•</span>
-                      <span>Format: JPG, PNG, GIF, WebP</span>
-                    </div>
-                  </div>
-                </div>
-
                 <input
                   ref={fileInputRef}
                   type="file"
+                  multiple={allowMultiple}
                   accept={acceptedFormats.join(',')}
-                  multiple
                   onChange={handleFileInputChange}
                   className="hidden"
                 />
+                
+                {isUploading ? (
+                  <div className="flex flex-col items-center">
+                    <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
+                    <p className="text-lg font-medium text-gray-700 mb-2">Yükleniyor...</p>
+                    <div className="w-64 bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-2">{uploadProgress}%</p>
+                  </div>
+                ) : (
+                  <div>
+                    <ImageIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-medium text-gray-700 mb-2">
+                      Görsel Yükle
+                    </h3>
+                    <p className="text-gray-500 mb-4">
+                      Dosyaları buraya sürükle bırak veya seç
+                    </p>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    >
+                      Dosya Seç
+                    </button>
+                    <p className="text-xs text-gray-500 mt-4">
+                      Desteklenen formatlar: JPG, PNG, GIF, WebP<br />
+                      Maksimum boyut: {(maxFileSize / (1024 * 1024)).toFixed(1)}MB
+                    </p>
+                  </div>
+                )}
               </div>
-
-              {/* Upload Progress */}
-              {isUploading && (
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                  <div className="flex items-center gap-3 mb-3">
-                    <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
-                    <span className="font-medium text-blue-900">Yükleniyor...</span>
-                    <span className="text-blue-600 font-mono text-sm ml-auto">{uploadProgress}%</span>
-                  </div>
-                  <div className="w-full bg-blue-100 rounded-full h-2">
-                    <div 
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${uploadProgress}%` }}
-                    />
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
@@ -401,47 +446,54 @@ const ImageUploadModal = ({
           {activeTab === 'url' && (
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-3">
-                  Görsel URL&apos;si
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Görsel URL'si
                 </label>
-                <div className="flex gap-3">
-                  <input
-                    type="url"
-                    value={urlInput}
-                    onChange={handleUrlChange}
-                    placeholder="https://example.com/image.jpg"
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                  />
-                  {urlPreview && (
-                    <button
-                      onClick={handleUrlSelect}
-                      className="px-6 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-colors flex items-center gap-2"
-                    >
-                      <Check className="w-4 h-4" />
-                      Kullan
-                    </button>
-                  )}
-                </div>
+                <input
+                  type="url"
+                  value={urlInput}
+                  onChange={handleUrlChange}
+                  placeholder="https://example.com/image.jpg"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
               </div>
 
               {/* URL Preview */}
               {urlPreview && (
-                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6">
-                  <h4 className="font-semibold text-gray-900 mb-4">Önizleme</h4>
-                  <div className="flex items-start gap-4">
-                    <div className="relative">
-                      <Image
-                        src={urlPreview.url}
-                        alt="URL Preview"
-                        width={200}
-                        height={150}
-                        className="rounded-lg shadow-sm object-cover"
-                      />
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={urlPreview.url}
+                      alt="Önizleme"
+                      className="w-24 h-24 object-cover rounded-lg"
+                    />
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">Görsel Önizlemesi</p>
+                      <p className="text-sm text-gray-500">
+                        {urlPreview.width} × {urlPreview.height} piksel
+                      </p>
+                      <div className="mt-3">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Alt Text
+                        </label>
+                        <input
+                          type="text"
+                          value={altText}
+                          onChange={(e) => setAltText(e.target.value)}
+                          placeholder="Görsel açıklaması..."
+                          className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
                     </div>
-                    <div className="flex-1 text-sm text-gray-600">
-                      <p><strong>Boyut:</strong> {urlPreview.width} × {urlPreview.height}px</p>
-                      <p><strong>URL:</strong> {urlPreview.url.substring(0, 50)}...</p>
-                    </div>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <button
+                      onClick={handleUrlSelect}
+                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Bu Görseli Kullan
+                    </button>
                   </div>
                 </div>
               )}
@@ -451,53 +503,103 @@ const ImageUploadModal = ({
           {/* Gallery Tab */}
           {activeTab === 'gallery' && (
             <div className="space-y-6">
-              {uploadedImages.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  <ImageIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-lg font-medium">Henüz yüklenen görsel yok</p>
-<p className="text-sm">İlk görselinizi yüklemek için &quot;Dosya Yükle&quot; sekmesini kullanın</p>
+              {/* Search */}
+              <div className="flex items-center gap-4">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Görsellerde ara..."
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
                 </div>
-              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {uploadedImages.map((image) => (
-                    <div key={image.id} className="group relative bg-gray-50 rounded-xl overflow-hidden border border-gray-200 hover:shadow-lg transition-all">
+                <button
+                  onClick={loadUploadedImages}
+                  className="p-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <Filter className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Image Grid */}
+              {filteredImages.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {filteredImages.map((image) => (
+                    <div
+                      key={image.id}
+                      className={`
+                        relative group border-2 rounded-lg overflow-hidden cursor-pointer transition-all
+                        ${selectedImage?.id === image.id 
+                          ? 'border-blue-500 ring-2 ring-blue-500 ring-opacity-50' 
+                          : 'border-gray-200 hover:border-gray-300'
+                        }
+                      `}
+                      onClick={() => setSelectedImage(image)}
+                    >
                       <div className="aspect-square relative">
-                        <Image
+                        <img
                           src={image.url}
-                          alt={image.originalName}
-                          fill
-                          className="object-cover"
+                          alt={image.alt || image.originalName}
+                          className="w-full h-full object-cover"
                         />
                         
                         {/* Overlay */}
-                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => handleImageSelect(image)}
-                            className="p-2 bg-white text-gray-900 rounded-lg opacity-0 group-hover:opacity-100 transition-all transform scale-95 group-hover:scale-100 hover:bg-blue-50 hover:text-blue-600"
-                            title="Seç"
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-                          
-                          <button
-                            onClick={() => copyToClipboard(image.url)}
-                            className="p-2 bg-white text-gray-900 rounded-lg opacity-0 group-hover:opacity-100 transition-all transform scale-95 group-hover:scale-100 hover:bg-green-50 hover:text-green-600"
-                            title="URL Kopyala"
-                          >
-                            <Copy className="w-4 h-4" />
-                          </button>
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 flex items-center justify-center">
+                          <div className="opacity-0 group-hover:opacity-100 flex gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteImage(image.id);
+                              }}
+                              className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedImage(image);
+                                handleImageSelect(image);
+                              }}
+                              className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors"
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
+
+                        {/* Selected indicator */}
+                        {selectedImage?.id === image.id && (
+                          <div className="absolute top-2 right-2 p-1 bg-blue-500 text-white rounded-full">
+                            <Check className="w-3 h-3" />
+                          </div>
+                        )}
                       </div>
                       
-                      {/* Info */}
-                      <div className="p-3">
-                        <p className="text-xs font-medium text-gray-900 truncate">{image.originalName}</p>
+                      <div className="p-3 bg-white">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {image.originalName}
+                        </p>
                         <p className="text-xs text-gray-500">
                           {(image.size / 1024).toFixed(1)} KB • {new Date(image.uploadedAt).toLocaleDateString('tr-TR')}
                         </p>
                       </div>
                     </div>
                   ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <ImageIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Görsel bulunamadı</h3>
+                  <p className="text-gray-500 mb-4">Henüz hiç görsel yüklenmemiş veya arama kriterlerinize uygun görsel yok.</p>
+                  <button
+                    onClick={() => setActiveTab('upload')}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    İlk Görseli Yükle
+                  </button>
                 </div>
               )}
             </div>
@@ -508,23 +610,46 @@ const ImageUploadModal = ({
         <div className="border-t border-gray-200 p-6 bg-gray-50">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-600">
-              {activeTab === 'upload' && (
-                <span>Desteklenen formatlar: JPG, PNG, GIF, WebP</span>
+              {activeTab === 'upload' && !isUploading && (
+                <span>Desteklenen formatlar: JPG, PNG, GIF, WebP • Maks. {(maxFileSize / (1024 * 1024)).toFixed(1)}MB</span>
               )}
               {activeTab === 'url' && (
-                <span>Geçerli bir görsel URL&apos;si girin</span>
+                <span>Geçerli bir görsel URL'si girin</span>
               )}
               {activeTab === 'gallery' && (
-                <span>{uploadedImages.length} görsel yüklendi</span>
+                <span>{filteredImages.length} görsel gösteriliyor</span>
               )}
             </div>
             
-            <button
-              onClick={handleClose}
-              className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              İptal
-            </button>
+            <div className="flex gap-3">
+              {selectedImage && activeTab === 'gallery' && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm text-gray-700">Alt Text:</label>
+                    <input
+                      type="text"
+                      value={altText}
+                      onChange={(e) => setAltText(e.target.value)}
+                      placeholder="Görsel açıklaması..."
+                      className="px-3 py-1 border border-gray-300 rounded text-sm"
+                    />
+                  </div>
+                  <button
+                    onClick={() => handleImageSelect(selectedImage)}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Seç
+                  </button>
+                </>
+              )}
+              
+              <button
+                onClick={handleClose}
+                className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                İptal
+              </button>
+            </div>
           </div>
         </div>
       </div>
