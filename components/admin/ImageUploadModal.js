@@ -166,7 +166,6 @@ const ImageUploadModal = ({
         await uploadFile(file);
       } catch (error) {
         console.error('Upload error:', error);
-        // Error is already set in uploadFile
         break; // Stop uploading on first error
       }
     }
@@ -447,7 +446,7 @@ const ImageUploadModal = ({
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Görsel URL'si
+                  Görsel URL&apos;si
                 </label>
                 <input
                   type="url"
@@ -614,7 +613,7 @@ const ImageUploadModal = ({
                 <span>Desteklenen formatlar: JPG, PNG, GIF, WebP • Maks. {(maxFileSize / (1024 * 1024)).toFixed(1)}MB</span>
               )}
               {activeTab === 'url' && (
-                <span>Geçerli bir görsel URL'si girin</span>
+                <span>Geçerli bir görsel URL&apos;si girin</span>
               )}
               {activeTab === 'gallery' && (
                 <span>{filteredImages.length} görsel gösteriliyor</span>
