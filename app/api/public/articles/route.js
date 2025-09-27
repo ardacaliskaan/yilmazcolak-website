@@ -1,13 +1,13 @@
-// app/api/public/articles/route.js - Public Blog Articles API (No Auth Required)
+// app/api/public/articles/route.js - Public Articles List API
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import Article from '@/models/Article';
 
-// GET - Public blog articles (SEO optimized)
+// ✅ GET - Public articles list with filtering
 export async function GET(request) {
   try {
     await dbConnect();
-
+    
     const { searchParams } = new URL(request.url);
     
     // Query parameters
@@ -15,92 +15,76 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get('limit')) || 12;
     const category = searchParams.get('category');
     const search = searchParams.get('search');
-    const featured = searchParams.get('featured') === 'true';
-    const latest = searchParams.get('latest') === 'true';
-    const popular = searchParams.get('popular') === 'true';
-    const related = searchParams.get('related'); // Article ID for related articles
+    const tag = searchParams.get('tag');
+    const exclude = searchParams.get('exclude'); // Exclude specific article ID
+    const sortBy = searchParams.get('sortBy') || 'publishedAt'; // publishedAt, viewCount, title
+    const sortOrder = searchParams.get('sortOrder') || 'desc';
 
-    // Build filter query - Only published articles
-    let filter = { 
+    console.log(`📰 Public articles list request:`, { 
+      page, limit, category, search, tag, exclude, sortBy, sortOrder 
+    });
+
+    // Build filter query
+    const filter = {
       status: 'published',
-      isIndexable: { $ne: false } // SEO: Only indexable articles
+      publishedAt: { $lte: new Date() }
     };
-    
+
+    // Category filter
     if (category && category !== 'all') {
       filter.category = category;
     }
-    
-    if (featured) {
-      filter.isFeatured = true;
+
+    // Exclude specific article
+    if (exclude) {
+      filter._id = { $ne: exclude };
     }
-    
+
+    // Tag filter
+    if (tag) {
+      filter.tags = { $in: [tag] };
+    }
+
+    // Search filter
     if (search) {
       filter.$or = [
         { title: { $regex: search, $options: 'i' } },
         { excerpt: { $regex: search, $options: 'i' } },
+        { content: { $regex: search, $options: 'i' } },
         { tags: { $in: [new RegExp(search, 'i')] } },
         { keywords: { $in: [new RegExp(search, 'i')] } }
       ];
     }
 
-    // Handle related articles
-    if (related && mongoose.Types.ObjectId.isValid(related)) {
-      const relatedArticle = await Article.findById(related).select('category tags keywords');
-      if (relatedArticle) {
-        filter._id = { $ne: related }; // Exclude current article
-        filter.$or = [
-          { category: relatedArticle.category },
-          { tags: { $in: relatedArticle.tags } },
-          { keywords: { $in: relatedArticle.keywords } }
-        ];
-      }
-    }
-
     // Build sort query
-    let sortQuery = {};
-    if (latest) {
-      sortQuery = { publishedAt: -1, createdAt: -1 };
-    } else if (popular) {
-      sortQuery = { viewCount: -1, publishedAt: -1 };
-    } else if (featured) {
-      sortQuery = { isFeatured: -1, publishedAt: -1 };
-    } else {
-      sortQuery = { publishedAt: -1 }; // Default: newest first
-    }
+    const sortQuery = {};
+    sortQuery[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
-    // Execute query with pagination
+    // Calculate pagination
     const skip = (page - 1) * limit;
-    
+
+    // Execute queries
     const [articles, totalCount] = await Promise.all([
       Article.find(filter)
-        .select(`
-          title slug excerpt category publishedAt readingTime viewCount 
-          featuredImage tags isFeatured seoScore readabilityScore authorName
-          metaTitle metaDescription focusKeyword
-        `)
+        .select('title slug excerpt featuredImage featuredImageAlt category publishedAt viewCount readingTime tags seoScore template')
+        .populate('author', 'name')
         .sort(sortQuery)
         .skip(skip)
         .limit(limit)
         .lean(),
+      
       Article.countDocuments(filter)
     ]);
 
-    // Add computed fields for SEO
-    const enhancedArticles = articles.map(article => ({
+    // Format articles
+    const formattedArticles = articles.map(article => ({
       ...article,
-      url: `/makaleler/${article.slug}`,
-      categoryName: getCategoryName(article.category),
-      publishedDate: article.publishedAt,
-      formattedDate: new Date(article.publishedAt).toLocaleDateString('tr-TR', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      }),
-      shareUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/makaleler/${article.slug}`,
-      estimatedReadTime: Math.ceil(article.wordCount / 200) || article.readingTime,
-      // SEO indicators
-      seoQuality: article.seoScore >= 80 ? 'excellent' : article.seoScore >= 60 ? 'good' : 'needs-improvement',
-      readabilityLevel: article.readabilityScore >= 80 ? 'easy' : article.readabilityScore >= 60 ? 'medium' : 'hard'
+      categoryLabel: getCategoryLabel(article.category),
+      templateLabel: getTemplateLabel(article.template),
+      formattedDate: formatDate(article.publishedAt),
+      readingTimeText: `${article.readingTime} dk okuma`,
+      viewCountText: formatViewCount(article.viewCount),
+      excerpt: article.excerpt || generateExcerpt(article.content)
     }));
 
     // Calculate pagination info
@@ -108,123 +92,138 @@ export async function GET(request) {
     const hasNextPage = page < totalPages;
     const hasPrevPage = page > 1;
 
-    // Get featured articles for sidebar/widgets
-    const featuredArticles = featured ? [] : await Article.find({
+    // Get popular articles (for sidebar)
+    const popularArticles = await Article.find({
       status: 'published',
-      isFeatured: true,
-      isIndexable: { $ne: false }
+      publishedAt: { $lte: new Date() }
     })
-    .select('title slug excerpt featuredImage publishedAt viewCount')
-    .sort({ publishedAt: -1 })
+    .select('title slug viewCount category publishedAt')
+    .populate('author', 'name')
+    .sort({ viewCount: -1 })
     .limit(5)
     .lean();
 
-    // Get popular articles
-    const popularArticles = popular ? [] : await Article.find({
-      status: 'published',
-      isIndexable: { $ne: false },
-      viewCount: { $gte: 100 }
-    })
-    .select('title slug viewCount publishedAt')
-    .sort({ viewCount: -1, publishedAt: -1 })
-    .limit(5)
-    .lean();
+    // Get latest articles by category
+    const latestByCategory = {};
+    const categories = ['aile-hukuku', 'ceza-hukuku', 'is-hukuku', 'ticaret-hukuku'];
+    
+    for (const cat of categories) {
+      const latestInCategory = await Article.findOne({
+        category: cat,
+        status: 'published',
+        publishedAt: { $lte: new Date() }
+      })
+      .select('title slug featuredImage category publishedAt')
+      .populate('author', 'name')
+      .sort({ publishedAt: -1 })
+      .lean();
+      
+      if (latestInCategory) {
+        latestByCategory[cat] = {
+          ...latestInCategory,
+          categoryLabel: getCategoryLabel(latestInCategory.category),
+          formattedDate: formatDate(latestInCategory.publishedAt)
+        };
+      }
+    }
 
-    // Get categories with article counts
-    const categoriesWithCounts = await Article.aggregate([
-      { $match: { status: 'published', isIndexable: { $ne: false } } },
-      { $group: { _id: '$category', count: { $sum: 1 } } },
-      { $sort: { count: -1 } }
-    ]);
+    console.log(`✅ Articles served: ${formattedArticles.length} articles (page ${page}/${totalPages})`);
 
-    const categoriesFormatted = categoriesWithCounts.map(cat => ({
-      slug: cat._id,
-      name: getCategoryName(cat._id),
-      count: cat.count,
-      url: `/makaleler?category=${cat._id}`
-    }));
-
-    // Response with caching headers
-    const response = NextResponse.json({
+    return NextResponse.json({
       success: true,
-      articles: enhancedArticles,
+      articles: formattedArticles,
       pagination: {
         currentPage: page,
         totalPages,
         totalCount,
         hasNextPage,
         hasPrevPage,
-        limit,
-        showing: `${skip + 1}-${skip + enhancedArticles.length}`,
-        total: totalCount
+        limit
       },
       meta: {
-        featured: featuredArticles.map(article => ({
+        popularArticles: popularArticles.map(article => ({
           ...article,
-          url: `/makaleler/${article.slug}`
+          categoryLabel: getCategoryLabel(article.category),
+          formattedDate: formatDate(article.publishedAt),
+          viewCountText: formatViewCount(article.viewCount)
         })),
-        popular: popularArticles.map(article => ({
-          ...article,
-          url: `/makaleler/${article.slug}`
-        })),
-        categories: categoriesFormatted,
-        filters: {
-          category,
-          search,
-          featured,
-          latest,
-          popular
-        }
-      },
-      seo: {
-        canonical: `${process.env.NEXT_PUBLIC_SITE_URL}/makaleler${category ? `?category=${category}` : ''}`,
-        robots: 'index,follow',
-        lastModified: new Date().toISOString()
-      },
-      timestamp: new Date().toISOString()
-    });
-
-    // Performance & SEO headers
-    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
-    response.headers.set('X-Robots-Tag', 'index, follow');
-    response.headers.set('Vary', 'Accept-Encoding');
-    
-    return response;
-
-  } catch (error) {
-    console.error('❌ Public articles API error:', error);
-    
-    return NextResponse.json({
-      success: false,
-      message: 'Articles could not be loaded',
-      articles: [],
-      pagination: null,
-      meta: null,
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    }, { 
-      status: 500,
+        latestByCategory,
+        searchQuery: search,
+        categoryFilter: category,
+        tagFilter: tag
+      }
+    }, {
       headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'X-Robots-Tag': 'noindex, nofollow'
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' // 5 min cache
       }
     });
+
+  } catch (error) {
+    console.error('❌ Public articles list error:', error);
+    return NextResponse.json({
+      success: false,
+      message: 'Makaleler yüklenirken hata oluştu'
+    }, { status: 500 });
   }
 }
 
-// Helper function for category names
-function getCategoryName(category) {
+// ✅ Helper functions
+function getCategoryLabel(category) {
   const categoryMap = {
+    'genel': 'Genel',
     'aile-hukuku': 'Aile Hukuku',
     'ceza-hukuku': 'Ceza Hukuku',
     'is-hukuku': 'İş Hukuku',
     'ticaret-hukuku': 'Ticaret Hukuku',
     'idare-hukuku': 'İdare Hukuku',
+    'icra-hukuku': 'İcra Hukuku',
     'gayrimenkul-hukuku': 'Gayrimenkul Hukuku',
     'miras-hukuku': 'Miras Hukuku',
-    'icra-hukuku': 'İcra Hukuku',
     'kvkk': 'KVKK',
-    'sigorta-hukuku': 'Sigorta Hukuku',
-    'genel': 'Genel'
+    'sigorta-hukuku': 'Sigorta Hukuku'
   };
-  return categoryMap[category] || 'Genel';
+  return categoryMap[category] || category;
+}
+
+function getTemplateLabel(template) {
+  const templateMap = {
+    'standard': 'Standart Makale',
+    'legal-article': 'Hukuki Makale',
+    'case-study': 'Vaka Analizi',
+    'legal-guide': 'Hukuk Rehberi',
+    'news': 'Hukuk Haberi'
+  };
+  return templateMap[template] || template;
+}
+
+function formatDate(date) {
+  if (!date) return '';
+  
+  return new Date(date).toLocaleDateString('tr-TR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+}
+
+function formatViewCount(count) {
+  if (!count) return '0';
+  
+  if (count >= 1000) {
+    return `${(count / 1000).toFixed(1)}k`;
+  }
+  return count.toString();
+}
+
+function generateExcerpt(content, maxLength = 150) {
+  if (!content) return '';
+  
+  // Remove HTML tags
+  const plainText = content.replace(/<[^>]*>/g, '');
+  
+  if (plainText.length <= maxLength) {
+    return plainText;
+  }
+  
+  return plainText.substring(0, maxLength).trim() + '...';
 }

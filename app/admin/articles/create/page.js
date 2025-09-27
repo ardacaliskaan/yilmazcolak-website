@@ -1,41 +1,21 @@
-
-// app/admin/articles/create/page.js
+// app/admin/articles/create/page.js - GÖRSEL ENTEGRASYON FİXED!
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
-  Save, 
-  Send, 
-  Eye, 
-  Clock, 
-  Calendar,
-  Tag,
-  Image as ImageIcon,
-  FileText,
-  Settings,
-  Zap,
-  ArrowLeft,
-  CheckCircle,
-  AlertTriangle,
-  Info,
-  Globe,
-  Hash,
-  Type,
-  Palette,
-  X,
-  Upload,
-  Layout
+  Save, Send, Eye, Clock, Calendar, Tag, Image as ImageIcon,
+  FileText, Settings, Zap, ArrowLeft, CheckCircle, AlertTriangle,
+  Info, Globe, Hash, Type, X, Upload
 } from 'lucide-react';
 
 import UltraProfessionalEditor from '@/components/admin/articles/UltraProfessionalEditor';
 import ImageUploadModal from '@/components/admin/ImageUploadModal';
-import SEOAnalysisPanel from '@/components/admin/SEOAnalysisPanel';
 
 const UltraProfessionalArticleCreate = () => {
   const router = useRouter();
   
-  // Article data state
+  // ✅ Article data state
   const [articleData, setArticleData] = useState({
     title: '',
     slug: '',
@@ -55,16 +35,20 @@ const UltraProfessionalArticleCreate = () => {
     template: 'standard'
   });
 
-  // UI state
+  // ✅ UI state
   const [activeTab, setActiveTab] = useState('content');
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [imageModalType, setImageModalType] = useState('content'); // 'content' | 'featured'
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Categories
+  // ✅ Refs
+  const editorRef = useRef(null);
+
+  // ✅ Categories
   const categories = [
     { value: 'genel', label: 'Genel', color: 'bg-gray-100 text-gray-800' },
     { value: 'aile-hukuku', label: 'Aile Hukuku', color: 'bg-pink-100 text-pink-800' },
@@ -75,11 +59,10 @@ const UltraProfessionalArticleCreate = () => {
     { value: 'icra-hukuku', label: 'İcra Hukuku', color: 'bg-orange-100 text-orange-800' },
     { value: 'gayrimenkul-hukuku', label: 'Gayrimenkul Hukuku', color: 'bg-yellow-100 text-yellow-800' },
     { value: 'miras-hukuku', label: 'Miras Hukuku', color: 'bg-indigo-100 text-indigo-800' },
-    { value: 'kvkk', label: 'KVKK', color: 'bg-cyan-100 text-cyan-800' },
-    { value: 'sigorta-hukuku', label: 'Sigorta Hukuku', color: 'bg-teal-100 text-teal-800' }
+    { value: 'kvkk', label: 'KVKK', color: 'bg-cyan-100 text-cyan-800' }
   ];
 
-  // Templates
+  // ✅ Templates
   const templates = [
     { value: 'standard', label: 'Standart Makale', description: 'Genel makale formatı' },
     { value: 'legal-article', label: 'Hukuki Makale', description: 'Hukuki analiz ve değerlendirme' },
@@ -88,14 +71,15 @@ const UltraProfessionalArticleCreate = () => {
     { value: 'news', label: 'Hukuk Haberi', description: 'Güncel hukuki gelişmeler' }
   ];
 
-  // Input change handler
+  // ✅ Input change handler - DEBOUNCED
   const handleInputChange = useCallback((field, value) => {
     setArticleData(prev => ({ ...prev, [field]: value }));
     
     // Auto generate slug from title
-    if (field === 'title' && !prev.slug) {
+    if (field === 'title' && !articleData.slug) {
       const slug = value
         .toLowerCase()
+        .trim()
         .replace(/ğ/g, 'g')
         .replace(/ü/g, 'u')
         .replace(/ş/g, 's')
@@ -105,37 +89,78 @@ const UltraProfessionalArticleCreate = () => {
         .replace(/[^a-z0-9\s]/g, '')
         .replace(/\s+/g, '-')
         .replace(/-+/g, '-')
-        .trim();
+        .replace(/^-|-$/g, '')
+        .substring(0, 100);
       
       setArticleData(prev => ({ ...prev, slug }));
     }
 
     // Auto generate meta title if empty
-    if (field === 'title' && !prev.metaTitle) {
+    if (field === 'title' && !articleData.metaTitle) {
       setArticleData(prev => ({ ...prev, metaTitle: value }));
     }
-  }, []);
+  }, [articleData.slug, articleData.metaTitle]);
 
-  // Content change handler - FIXED!
+  // ✅ Content change handler - EDİTÖRDEN GELİYOR
   const handleContentChange = useCallback((content) => {
+    console.log('📝 Content changed in editor:', content.length, 'characters');
     setArticleData(prev => ({ ...prev, content }));
   }, []);
 
-  // Image selection handler
+  // ✅ KRİTİK: Image selection handler - EDİTÖRE EKLEME!
   const handleImageSelect = useCallback((imageUrl, altText = '') => {
-    if (activeTab === 'featuredImage') {
+    console.log('🖼️ Image selected:', { imageUrl, altText, type: imageModalType });
+    
+    if (imageModalType === 'featured') {
+      // ✅ Featured image set et
       setArticleData(prev => ({
         ...prev, 
         featuredImage: imageUrl,
         featuredImageAlt: altText
       }));
-    } else {
-      // Insert into editor - this will be handled by the editor
+      console.log('✅ Featured image set:', imageUrl);
+      
+    } else if (imageModalType === 'content') {
+      // ✅ Editöre görsel ekle - UltraProfessionalEditor'ın insertContent metodunu kullan
+      if (editorRef.current && editorRef.current.insertImageToEditor) {
+        editorRef.current.insertImageToEditor(imageUrl, altText);
+        console.log('✅ Image inserted to editor:', imageUrl);
+      } else {
+        // Fallback: Direct HTML insertion
+        const imgHtml = `
+          <figure class="my-4 text-center">
+            <img src="${imageUrl}" alt="${altText}" class="max-w-full h-auto rounded-lg shadow-sm mx-auto" style="max-width: 100%; height: auto;" />
+            ${altText ? `<figcaption class="text-sm text-gray-600 mt-2">${altText}</figcaption>` : ''}
+          </figure>
+        `;
+        
+        // Content'e ekle (fallback)
+        setArticleData(prev => ({
+          ...prev,
+          content: prev.content + imgHtml
+        }));
+        console.log('✅ Image added to content (fallback)');
+      }
     }
+    
+    // Modal'ı kapat
     setIsImageModalOpen(false);
-  }, [activeTab]);
+  }, [imageModalType]);
 
-  // Handle keywords and tags
+  // ✅ Image modal açma handlers
+  const openImageModalForContent = useCallback(() => {
+    console.log('🔄 Opening image modal for content');
+    setImageModalType('content');
+    setIsImageModalOpen(true);
+  }, []);
+
+  const openImageModalForFeatured = useCallback(() => {
+    console.log('🔄 Opening image modal for featured image');
+    setImageModalType('featured');
+    setIsImageModalOpen(true);
+  }, []);
+
+  // ✅ Keywords & Tags handling
   const handleKeywordAdd = useCallback((keyword) => {
     if (keyword && !articleData.keywords.includes(keyword)) {
       setArticleData(prev => ({
@@ -168,232 +193,191 @@ const UltraProfessionalArticleCreate = () => {
     }));
   }, []);
 
-  // Auto save functionality
-  const autoSave = useCallback(async () => {
-    if (!articleData.title.trim() || !articleData.content.trim()) return;
-
+  // ✅ Auto-save implementation
+  const autoSave = useCallback(async (data) => {
+    if (!data.title.trim()) return;
+    
     try {
       const response = await fetch('/api/admin/articles/auto-save', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          ...articleData,
-          status: 'auto-draft'
-        }),
+          title: data.title,
+          content: data.content,
+          excerpt: data.excerpt,
+          category: data.category
+        })
       });
 
       if (response.ok) {
+        const result = await response.json();
         setLastSaved(new Date());
+        console.log('💾 Auto-saved successfully');
+        
+        // Eğer yeni oluşturulan article ise, edit sayfasına yönlendir
+        if (result.redirectTo) {
+          router.push(result.redirectTo);
+        }
       }
     } catch (error) {
-      console.error('Auto save error:', error);
+      console.error('Auto-save failed:', error);
     }
-  }, [articleData]);
+  }, [router]);
 
-  // Auto save every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(autoSave, 30000);
-    return () => clearInterval(interval);
-  }, [autoSave]);
-
-  // Save as draft
-  const handleSave = useCallback(async () => {
-    if (!articleData.title.trim()) {
-      setError('Makale başlığı gereklidir');
-      return;
-    }
-
+  // ✅ Save handlers
+  const handleSave = useCallback(async (status = 'draft') => {
     setIsSaving(true);
     setError('');
-
+    
     try {
+      const dataToSave = {
+        ...articleData,
+        status,
+        keywords: typeof articleData.keywords === 'string' 
+          ? articleData.keywords.split(',').map(k => k.trim()).filter(Boolean)
+          : articleData.keywords,
+        tags: typeof articleData.tags === 'string'
+          ? articleData.tags.split(',').map(t => t.trim()).filter(Boolean)
+          : articleData.tags
+      };
+
       const response = await fetch('/api/admin/articles', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({
-          ...articleData,
-          status: 'draft'
-        }),
+        body: JSON.stringify(dataToSave)
       });
 
       const result = await response.json();
 
-      if (result.success) {
+      if (response.ok) {
+        setSuccess(status === 'published' ? 'Makale başarıyla yayınlandı!' : 'Makale başarıyla kaydedildi!');
         setLastSaved(new Date());
-        setSuccess('Makale taslak olarak kaydedildi');
         
-        // Clear success message after 3 seconds
-        setTimeout(() => setSuccess(''), 3000);
+        // Edit sayfasına yönlendir
+        if (result.article?._id) {
+          router.push(`/admin/articles/${result.article._id}/edit`);
+        }
       } else {
-        setError(result.message || 'Kaydetme sırasında bir hata oluştu');
+        setError(result.message || 'Kaydetme hatası oluştu');
       }
     } catch (error) {
       console.error('Save error:', error);
-      setError('Kaydetme sırasında bir hata oluştu');
+      setError('Sunucu hatası oluştu');
     } finally {
       setIsSaving(false);
     }
-  }, [articleData]);
-
-  // Publish article
-  const handlePublish = useCallback(async () => {
-    // Validation
-    const requiredFields = ['title', 'excerpt', 'content', 'metaDescription'];
-    const missingFields = requiredFields.filter(field => !articleData[field]?.trim());
-    
-    if (missingFields.length > 0) {
-      setError(`Yayınlamak için gerekli alanlar: ${missingFields.join(', ')}`);
-      return;
-    }
-
-    setIsPublishing(true);
-    setError('');
-
-    try {
-      const response = await fetch('/api/admin/articles', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          ...articleData,
-          status: 'published',
-          publishedAt: new Date().toISOString()
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setSuccess('Makale başarıyla yayınlandı!');
-        
-        // Redirect to articles list after success
-        setTimeout(() => {
-          router.push('/admin/articles');
-        }, 2000);
-      } else {
-        setError(result.message || 'Yayınlama sırasında bir hata oluştu');
-      }
-    } catch (error) {
-      console.error('Publish error:', error);
-      setError('Yayınlama sırasında bir hata oluştu');
-    } finally {
-      setIsPublishing(false);
-    }
   }, [articleData, router]);
 
-  // Get current category and template info
-  const currentCategory = categories.find(cat => cat.value === articleData.category);
-  const currentTemplate = templates.find(template => template.value === articleData.template);
+  const handlePublish = useCallback(() => {
+    setIsPublishing(true);
+    handleSave('published').finally(() => setIsPublishing(false));
+  }, [handleSave]);
 
-  // Calculate stats
-  const plainText = articleData.content.replace(/<[^>]*>/g, '');
-  const wordCount = plainText.split(/\s+/).filter(w => w.length > 0).length;
-  const readingTime = Math.ceil(wordCount / 200);
+  // ✅ Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 's') {
+          e.preventDefault();
+          handleSave('draft');
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleSave]);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      
+      {/* HEADER */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            {/* Left - Navigation */}
+            
+            {/* Left - Back & Title */}
             <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.back()}
-                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              <Link
+                href="/admin/articles"
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
-              </button>
+              </Link>
               
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Yeni Makale</h1>
-                <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${currentCategory?.color}`}>
-                    {currentCategory?.label}
-                  </span>
-                  <span>{wordCount} kelime</span>
-                  <span>{readingTime} dakika okuma</span>
-                  {lastSaved && (
-                    <span className="flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3 text-green-500" />
-                      {lastSaved.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} otomatik kaydedildi
-                    </span>
-                  )}
-                </div>
+                <h1 className="text-xl font-bold text-gray-900">Yeni Makale</h1>
+                {lastSaved && (
+                  <p className="text-sm text-gray-500">
+                    Son kayıt: {lastSaved.toLocaleTimeString('tr-TR')}
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Right - Actions */}
             <div className="flex items-center gap-3">
               <button
-                onClick={() => alert('Önizleme özelliği yakında')}
-                className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                <Eye className="w-4 h-4" />
-                Önizle
-              </button>
-
-              <button
-                onClick={handleSave}
+                onClick={() => handleSave('draft')}
                 disabled={isSaving}
-                className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
-                <Save className="w-4 h-4" />
+                {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                 {isSaving ? 'Kaydediliyor...' : 'Taslak Kaydet'}
               </button>
 
               <button
                 onClick={handlePublish}
-                disabled={isPublishing}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                disabled={isPublishing || !articleData.title.trim()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
-                <Send className="w-4 h-4" />
+                {isPublishing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
                 {isPublishing ? 'Yayınlanıyor...' : 'Yayınla'}
               </button>
             </div>
           </div>
-
-          {/* Error/Success Messages */}
-          {error && (
-            <div className="mt-4 p-3 bg-red-100 border border-red-200 rounded-lg flex items-center gap-2 text-red-800">
-              <AlertTriangle className="w-4 h-4" />
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div className="mt-4 p-3 bg-green-100 border border-green-200 rounded-lg flex items-center gap-2 text-green-800">
-              <CheckCircle className="w-4 h-4" />
-              {success}
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* NOTIFICATIONS */}
+      {error && (
+        <div className="max-w-7xl mx-auto px-6 pt-4">
+          <div className="bg-red-100 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
+            <span className="text-red-800">{error}</span>
+            <button onClick={() => setError('')} className="ml-auto text-red-600 hover:text-red-800">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {success && (
+        <div className="max-w-7xl mx-auto px-6 pt-4">
+          <div className="bg-green-100 border border-green-200 rounded-lg p-4 flex items-center gap-3">
+            <CheckCircle className="w-5 h-5 text-green-600" />
+            <span className="text-green-800">{success}</span>
+            <button onClick={() => setSuccess('')} className="ml-auto text-green-600 hover:text-green-800">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MAIN CONTENT */}
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* Left Column - Basic Info & Settings */}
-          <div className="lg:col-span-3 space-y-6">
-            {/* Title & Slug */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Type className="w-4 h-4 text-blue-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">Temel Bilgiler</h3>
-              </div>
-              
+          {/* LEFT COLUMN - Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Basic Info */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="space-y-4">
+                
+                {/* Title */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Makale Başlığı *
@@ -402,24 +386,84 @@ const UltraProfessionalArticleCreate = () => {
                     type="text"
                     value={articleData.title}
                     onChange={(e) => handleInputChange('title', e.target.value)}
-                    placeholder="Makale başlığını yazın..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    placeholder="Makale başlığınızı yazın..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg font-medium"
                   />
                 </div>
 
+                {/* Slug */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     URL Slug
                   </label>
-                  <input
-                    type="text"
-                    value={articleData.slug}
-                    onChange={(e) => handleInputChange('slug', e.target.value)}
-                    placeholder="url-slug"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                  />
+                  <div className="flex">
+                    <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                      /makaleler/
+                    </span>
+                    <input
+                      type="text"
+                      value={articleData.slug}
+                      onChange={(e) => handleInputChange('slug', e.target.value)}
+                      placeholder="makale-url-slug"
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
                 </div>
 
+                {/* Excerpt */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Makale Özeti
+                  </label>
+                  <textarea
+                    value={articleData.excerpt}
+                    onChange={(e) => handleInputChange('excerpt', e.target.value)}
+                    placeholder="Makale özetini yazın..."
+                    rows="3"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {articleData.excerpt.length}/300 karakter
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Editor */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Type className="w-5 h-5 text-blue-600" />
+                  İçerik Editörü
+                </h3>
+              </div>
+              
+              {/* ✅ UltraProfessionalEditor with Image Integration */}
+              <UltraProfessionalEditor
+                ref={editorRef}
+                content={articleData.content}
+                onChange={handleContentChange}
+                onImageInsert={openImageModalForContent} // ✅ KRİTİK: Image modal'ı aç
+                placeholder="Makale içeriğinizi buraya yazın..."
+                autoSave={true}
+                className="min-h-[500px]"
+              />
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN - Settings & Meta */}
+          <div className="space-y-6">
+            
+            {/* Publishing Settings */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Settings className="w-5 h-5 text-purple-600" />
+                Ayarlar
+              </h3>
+              
+              <div className="space-y-4">
+                
+                {/* Category */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Kategori
@@ -427,24 +471,23 @@ const UltraProfessionalArticleCreate = () => {
                   <select
                     value={articleData.category}
                     onChange={(e) => handleInputChange('category', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    {categories.map(category => (
-                      <option key={category.value} value={category.value}>
-                        {category.label}
-                      </option>
+                    {categories.map(cat => (
+                      <option key={cat.value} value={cat.value}>{cat.label}</option>
                     ))}
                   </select>
                 </div>
 
+                {/* Template */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Makale Şablonu
+                    Şablon
                   </label>
                   <select
                     value={articleData.template}
                     onChange={(e) => handleInputChange('template', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     {templates.map(template => (
                       <option key={template.value} value={template.value}>
@@ -452,200 +495,122 @@ const UltraProfessionalArticleCreate = () => {
                       </option>
                     ))}
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {currentTemplate?.description}
-                  </p>
+                </div>
+
+                {/* Comments */}
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="allowComments"
+                    checked={articleData.allowComments}
+                    onChange={(e) => handleInputChange('allowComments', e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <label htmlFor="allowComments" className="ml-2 text-sm text-gray-700">
+                    Yorumlara izin ver
+                  </label>
                 </div>
               </div>
             </div>
 
             {/* Featured Image */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                  <ImageIcon className="w-4 h-4 text-green-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">Öne Çıkan Görsel</h3>
-              </div>
-
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <ImageIcon className="w-5 h-5 text-green-600" />
+                Öne Çıkan Görsel
+              </h3>
+              
               {articleData.featuredImage ? (
-                <div className="relative">
-                  <img
-                    src={articleData.featuredImage}
-                    alt={articleData.featuredImageAlt}
-                    className="w-full h-40 object-cover rounded-lg"
-                  />
-                  <button
-                    onClick={() => setArticleData(prev => ({ ...prev, featuredImage: '', featuredImageAlt: '' }))}
-                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                <div className="space-y-4">
+                  <div className="relative">
+                    <img
+                      src={articleData.featuredImage}
+                      alt={articleData.featuredImageAlt || 'Öne çıkan görsel'}
+                      className="w-full h-48 object-cover rounded-lg"
+                    />
+                    <button
+                      onClick={() => setArticleData(prev => ({ ...prev, featuredImage: '', featuredImageAlt: '' }))}
+                      className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Alt Text
+                    </label>
+                    <input
+                      type="text"
+                      value={articleData.featuredImageAlt}
+                      onChange={(e) => handleInputChange('featuredImageAlt', e.target.value)}
+                      placeholder="Görsel açıklaması..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    />
+                  </div>
                 </div>
               ) : (
                 <button
-                  onClick={() => {
-                    setActiveTab('featuredImage');
-                    setIsImageModalOpen(true);
-                  }}
-                  className="w-full h-40 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-500 hover:border-gray-400 hover:text-gray-600 transition-colors"
+                  onClick={openImageModalForFeatured} // ✅ Featured image modal
+                  className="w-full p-8 border-2 border-dashed border-gray-300 rounded-lg text-center hover:border-blue-400 hover:bg-blue-50 transition-colors"
                 >
-                  <Upload className="w-8 h-8 mb-2" />
-                  <span>Görsel Seç</span>
+                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-600 font-medium">Öne Çıkan Görsel Seç</p>
+                  <p className="text-sm text-gray-500">Tıklayarak görsel yükleyin</p>
                 </button>
               )}
-
-              {articleData.featuredImage && (
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Alt Text
-                  </label>
-                  <input
-                    type="text"
-                    value={articleData.featuredImageAlt}
-                    onChange={(e) => handleInputChange('featuredImageAlt', e.target.value)}
-                    placeholder="Görsel açıklaması..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Publishing Options */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <Settings className="w-4 h-4 text-orange-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">Yayın Ayarları</h3>
-              </div>
-
-              <div className="space-y-4">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={articleData.allowComments}
-                    onChange={(e) => handleInputChange('allowComments', e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">Yorumlara izin ver</span>
-                </label>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Zamanlanmış Yayın
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={articleData.scheduledAt}
-                    onChange={(e) => handleInputChange('scheduledAt', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Middle Column - Content Editor */}
-          <div className="lg:col-span-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-              <div className="border-b border-gray-200 p-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <FileText className="w-4 h-4 text-purple-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900">İçerik Editörü</h3>
-                </div>
-              </div>
-              
-              <UltraProfessionalEditor
-                content={articleData.content}
-                onChange={handleContentChange}
-                onImageInsert={() => {
-                  setActiveTab('content');
-                  setIsImageModalOpen(true);
-                }}
-                placeholder="Makale içeriğinizi buraya yazın..."
-                className="min-h-[600px]"
-              />
-            </div>
-          </div>
-
-          {/* Right Column - SEO & Meta */}
-          <div className="lg:col-span-3 space-y-6">
-            {/* Excerpt */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                  <Hash className="w-4 h-4 text-yellow-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">Özet</h3>
-              </div>
-              
-              <textarea
-                value={articleData.excerpt}
-                onChange={(e) => handleInputChange('excerpt', e.target.value)}
-                placeholder="Makale özetini yazın..."
-                rows="4"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-              />
-              <p className="text-xs text-gray-500 mt-2">
-                {articleData.excerpt.length}/300 karakter
-              </p>
             </div>
 
             {/* SEO Settings */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <Zap className="w-4 h-4 text-purple-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">SEO Ayarları</h3>
-              </div>
-
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Globe className="w-5 h-5 text-blue-600" />
+                SEO Ayarları
+              </h3>
+              
               <div className="space-y-4">
+                
+                {/* Meta Title */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Meta Başlık
+                    SEO Başlığı
                   </label>
                   <input
                     type="text"
                     value={articleData.metaTitle}
                     onChange={(e) => handleInputChange('metaTitle', e.target.value)}
                     placeholder="SEO başlığı..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    {articleData.metaTitle.length}/60 karakter
-                  </p>
+                  <p className="text-xs text-gray-500 mt-1">{articleData.metaTitle.length}/60</p>
                 </div>
 
+                {/* Meta Description */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Meta Açıklama *
+                    Meta Açıklama
                   </label>
                   <textarea
                     value={articleData.metaDescription}
                     onChange={(e) => handleInputChange('metaDescription', e.target.value)}
                     placeholder="SEO açıklaması..."
                     rows="3"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    {articleData.metaDescription.length}/160 karakter
-                  </p>
+                  <p className="text-xs text-gray-500 mt-1">{articleData.metaDescription.length}/160</p>
                 </div>
 
+                {/* Focus Keyword */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ana Anahtar Kelime
+                    Odak Kelimesi
                   </label>
                   <input
                     type="text"
                     value={articleData.focusKeyword}
                     onChange={(e) => handleInputChange('focusKeyword', e.target.value)}
-                    placeholder="Ana anahtar kelime..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    placeholder="ana anahtar kelime"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   />
                 </div>
 
@@ -654,29 +619,12 @@ const UltraProfessionalArticleCreate = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Anahtar Kelimeler
                   </label>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {articleData.keywords.map(keyword => (
-                      <span key={keyword} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
-                        {keyword}
-                        <button
-                          onClick={() => handleKeywordRemove(keyword)}
-                          className="hover:text-blue-600"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
                   <input
                     type="text"
-                    placeholder="Anahtar kelime ekle..."
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        handleKeywordAdd(e.target.value.trim());
-                        e.target.value = '';
-                      }
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    value={Array.isArray(articleData.keywords) ? articleData.keywords.join(', ') : ''}
+                    onChange={(e) => handleInputChange('keywords', e.target.value.split(',').map(k => k.trim()).filter(Boolean))}
+                    placeholder="kelime1, kelime2, kelime3"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   />
                 </div>
 
@@ -685,59 +633,30 @@ const UltraProfessionalArticleCreate = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Etiketler
                   </label>
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {articleData.tags.map(tag => (
-                      <span key={tag} className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
-                        {tag}
-                        <button
-                          onClick={() => handleTagRemove(tag)}
-                          className="hover:text-green-600"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
                   <input
                     type="text"
-                    placeholder="Etiket ekle..."
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        handleTagAdd(e.target.value.trim());
-                        e.target.value = '';
-                      }
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    value={Array.isArray(articleData.tags) ? articleData.tags.join(', ') : ''}
+                    onChange={(e) => handleInputChange('tags', e.target.value.split(',').map(t => t.trim()).filter(Boolean))}
+                    placeholder="etiket1, etiket2, etiket3"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   />
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Bottom: SEO Analysis Panel */}
-        <div className="mt-8">
-          <SEOAnalysisPanel
-            title={articleData.title}
-            content={articleData.content}
-            excerpt={articleData.excerpt}
-            metaTitle={articleData.metaTitle}
-            metaDescription={articleData.metaDescription}
-            focusKeyword={articleData.focusKeyword}
-            tags={articleData.tags}
-            featuredImage={articleData.featuredImage}
-            slug={articleData.slug}
-          />
-        </div>
       </div>
 
-      {/* Image Upload Modal */}
+      {/* ✅ IMAGE UPLOAD MODAL */}
       <ImageUploadModal
         isOpen={isImageModalOpen}
         onClose={() => setIsImageModalOpen(false)}
-        onImageSelect={handleImageSelect}
+        onImageSelect={handleImageSelect} // ✅ KRİTİK: Görsel seçim callback'i
+        type="articles"
+        allowMultiple={false}
       />
     </div>
   );
 };
+
 export default UltraProfessionalArticleCreate;

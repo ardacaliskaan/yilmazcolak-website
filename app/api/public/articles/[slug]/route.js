@@ -1,197 +1,137 @@
-// app/api/public/articles/[slug]/route.js - Public Single Article API
+// app/api/public/articles/[slug]/route.js - Public Article API
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import Article from '@/models/Article';
 
+// ✅ GET - Single article by slug (public)
 export async function GET(request, { params }) {
   try {
     await dbConnect();
-
+    
     const { slug } = params;
     
     if (!slug) {
       return NextResponse.json({
         success: false,
-        message: 'Slug parameter is required',
-        article: null
+        message: 'Slug parametresi gerekli'
       }, { status: 400 });
     }
 
-    console.log(`📄 Public article requested: ${slug}`);
+    console.log(`📖 Public article request: ${slug}`);
 
     // Find published article by slug
-    const article = await Article.findOne({ 
-      slug: slug,
+    const article = await Article.findOne({
+      slug,
       status: 'published',
-      isIndexable: { $ne: false } // Only indexable articles
+      publishedAt: { $lte: new Date() }
     })
-    .populate('author', 'name email slug bio')
+    .populate('author', 'name')
     .lean();
 
     if (!article) {
-      console.log(`❌ Article not found or not published: ${slug}`);
       return NextResponse.json({
         success: false,
-        message: 'Article not found',
-        article: null
-      }, { 
-        status: 404,
-        headers: {
-          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
-          'X-Robots-Tag': 'noindex, nofollow'
-        }
-      });
-    }
-
-    // Increment view count (non-blocking)
-    Article.findByIdAndUpdate(article._id, { 
-      $inc: { viewCount: 1 } 
-    }).exec().catch(err => {
-      console.log('View count update failed (non-critical):', err.message);
-    });
-
-    // Add computed fields
-    const enrichedArticle = {
-      ...article,
-      url: `/makaleler/${article.slug}`,
-      categoryName: getCategoryName(article.category),
-      estimatedReadingTime: Math.ceil(article.wordCount / 200),
-      shareUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/makaleler/${article.slug}`,
-      formattedPublishDate: new Date(article.publishedAt).toLocaleDateString('tr-TR', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      }),
-      isRecent: isRecentArticle(article.publishedAt),
-      seoQuality: article.seoScore >= 80 ? 'excellent' : article.seoScore >= 60 ? 'good' : 'needs-improvement',
-      readabilityLevel: article.readabilityScore >= 80 ? 'easy' : article.readabilityScore >= 60 ? 'medium' : 'hard'
-    };
-
-    console.log(`✅ Article served: ${article.title} (Views: ${article.viewCount + 1})`);
-
-    const response = NextResponse.json({
-      success: true,
-      article: enrichedArticle,
-      meta: {
-        canonical: `${process.env.NEXT_PUBLIC_SITE_URL}/makaleler/${article.slug}`,
-        robots: 'index,follow',
-        lastModified: article.updatedAt || article.publishedAt,
-        nextUpdate: getNextUpdateTime(article.updatedAt)
-      },
-      timestamp: new Date().toISOString()
-    });
-
-    // Performance & SEO headers
-    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
-    response.headers.set('X-Robots-Tag', 'index, follow, max-image-preview:large');
-    response.headers.set('Vary', 'Accept-Encoding');
-    response.headers.set('Last-Modified', new Date(article.updatedAt || article.publishedAt).toUTCString());
-    
-    return response;
-
-  } catch (error) {
-    console.error('❌ Public single article API error:', error);
-    
-    return NextResponse.json({
-      success: false,
-      message: 'Article could not be loaded',
-      article: null,
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    }, { 
-      status: 500,
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'X-Robots-Tag': 'noindex, nofollow'
-      }
-    });
-  }
-}
-
-// PATCH - Increment view count (separate endpoint for client-side tracking)
-export async function PATCH(request, { params }) {
-  try {
-    await dbConnect();
-
-    const { slug } = params;
-    
-    // Find and increment view count
-    const article = await Article.findOneAndUpdate(
-      { 
-        slug: slug,
-        status: 'published'
-      },
-      { 
-        $inc: { viewCount: 1 },
-        $set: { lastViewed: new Date() }
-      },
-      { new: false } // Return old document for performance
-    ).select('_id viewCount title');
-
-    if (!article) {
-      return NextResponse.json({
-        success: false,
-        message: 'Article not found'
+        message: 'Makale bulunamadı'
       }, { status: 404 });
     }
 
-    console.log(`👁️ View count incremented for: ${article.title} (${article.viewCount + 1})`);
+    // Increment view count (async, don't wait)
+    Article.findByIdAndUpdate(article._id, { 
+      $inc: { viewCount: 1 } 
+    }).catch(err => console.error('View count update failed:', err));
+
+    // Get related articles (same category, exclude current)
+    const relatedArticles = await Article.find({
+      category: article.category,
+      status: 'published',
+      publishedAt: { $lte: new Date() },
+      _id: { $ne: article._id }
+    })
+    .select('title slug excerpt featuredImage category publishedAt viewCount readingTime')
+    .populate('author', 'name')
+    .sort({ publishedAt: -1 })
+    .limit(3)
+    .lean();
+
+    // Format response
+    const formattedArticle = {
+      ...article,
+      categoryLabel: getCategoryLabel(article.category),
+      statusLabel: getStatusLabel(article.status),
+      templateLabel: getTemplateLabel(article.template),
+      formattedDate: formatDate(article.publishedAt),
+      relatedArticles: relatedArticles.map(related => ({
+        ...related,
+        categoryLabel: getCategoryLabel(related.category),
+        formattedDate: formatDate(related.publishedAt)
+      }))
+    };
+
+    console.log(`✅ Article served: ${article.title} (${article.viewCount + 1} views)`);
 
     return NextResponse.json({
       success: true,
-      viewCount: article.viewCount + 1,
-      timestamp: new Date().toISOString()
+      article: formattedArticle
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' // 5 min cache
+      }
     });
 
   } catch (error) {
-    console.error('View count increment error:', error);
-    
-    // Don't fail the request for view count errors
+    console.error('❌ Public article fetch error:', error);
     return NextResponse.json({
       success: false,
-      message: 'View count update failed',
-      note: 'Non-critical error'
-    });
+      message: 'Makale yüklenirken hata oluştu'
+    }, { status: 500 });
   }
 }
 
-// Helper Functions
-function getCategoryName(category) {
+// ✅ Helper functions
+function getCategoryLabel(category) {
   const categoryMap = {
+    'genel': 'Genel',
     'aile-hukuku': 'Aile Hukuku',
     'ceza-hukuku': 'Ceza Hukuku',
     'is-hukuku': 'İş Hukuku',
     'ticaret-hukuku': 'Ticaret Hukuku',
     'idare-hukuku': 'İdare Hukuku',
+    'icra-hukuku': 'İcra Hukuku',
     'gayrimenkul-hukuku': 'Gayrimenkul Hukuku',
     'miras-hukuku': 'Miras Hukuku',
-    'icra-hukuku': 'İcra Hukuku',
     'kvkk': 'KVKK',
-    'sigorta-hukuku': 'Sigorta Hukuku',
-    'genel': 'Genel'
+    'sigorta-hukuku': 'Sigorta Hukuku'
   };
-  return categoryMap[category] || 'Genel';
+  return categoryMap[category] || category;
 }
 
-function isRecentArticle(publishedAt) {
-  const oneMonthAgo = new Date();
-  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-  return new Date(publishedAt) > oneMonthAgo;
+function getStatusLabel(status) {
+  const statusMap = {
+    'draft': 'Taslak',
+    'published': 'Yayında',
+    'scheduled': 'Zamanlanmış',
+    'archived': 'Arşiv'
+  };
+  return statusMap[status] || status;
 }
 
-function getNextUpdateTime(lastUpdate) {
-  // Suggest next cache update time based on article age
-  const now = new Date();
-  const updated = new Date(lastUpdate);
-  const ageInDays = (now - updated) / (1000 * 60 * 60 * 24);
+function getTemplateLabel(template) {
+  const templateMap = {
+    'standard': 'Standart Makale',
+    'legal-article': 'Hukuki Makale',
+    'case-study': 'Vaka Analizi',
+    'legal-guide': 'Hukuk Rehberi',
+    'news': 'Hukuk Haberi'
+  };
+  return templateMap[template] || template;
+}
+
+function formatDate(date) {
+  if (!date) return '';
   
-  if (ageInDays < 1) {
-    // Very recent articles - update every hour
-    return new Date(now.getTime() + 60 * 60 * 1000).toISOString();
-  } else if (ageInDays < 7) {
-    // Recent articles - update every 6 hours
-    return new Date(now.getTime() + 6 * 60 * 60 * 1000).toISOString();
-  } else {
-    // Older articles - update daily
-    return new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
-  }
+  return new Date(date).toLocaleDateString('tr-TR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
 }

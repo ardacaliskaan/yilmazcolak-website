@@ -1,10 +1,11 @@
-// app/api/admin/media/route.js - Media Gallery Management API
+// app/api/admin/media/route.js - Galeri Yönetimi API
 import { NextResponse } from 'next/server';
 import { readdir, stat, unlink } from 'fs/promises';
 import path from 'path';
 import { getServerSession } from '@/lib/auth';
+import { hasPermission } from '@/lib/dynamicPermissions';
 
-// GET - Media gallery listing
+// ✅ GET - Uploaded images listesi
 export async function GET(request) {
   try {
     const session = await getServerSession(request);
@@ -12,93 +13,90 @@ export async function GET(request) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
+    // Yetki kontrolü
+    if (!(await hasPermission(session.user, 'content', 'read'))) {
+      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
+    }
+
+    console.log(`📁 Media gallery request from: ${session.user.name}`);
+
     const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type') || 'all';
+    const type = searchParams.get('type') || 'all'; // articles, team, general, all
     const limit = parseInt(searchParams.get('limit')) || 50;
-    const page = parseInt(searchParams.get('page')) || 1;
-    const search = searchParams.get('search') || '';
+    const sortBy = searchParams.get('sortBy') || 'date'; // date, name, size
+    const sortOrder = searchParams.get('sortOrder') || 'desc'; // asc, desc
 
-    console.log(`📁 Media gallery request: type=${type}, limit=${limit}, page=${page}, search=${search}`);
-
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-    
-    // Read all media files
     const images = [];
-    
-    try {
-      const categories = await readdir(uploadsDir);
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+
+    // ✅ Scan upload directories
+    const scanDirectories = type === 'all' 
+      ? ['articles', 'team', 'general']
+      : [type];
+
+    for (const dirType of scanDirectories) {
+      const typeDir = path.join(uploadsDir, dirType);
       
-      for (const category of categories) {
-        const categoryPath = path.join(uploadsDir, category);
-        const categoryStats = await stat(categoryPath);
+      try {
+        const files = await readdir(typeDir);
         
-        if (categoryStats.isDirectory()) {
-          const files = await readdir(categoryPath);
+        for (const file of files) {
+          const filePath = path.join(typeDir, file);
+          const stats = await stat(filePath);
           
-          for (const file of files) {
-            const filePath = path.join(categoryPath, file);
-            const fileStats = await stat(filePath);
+          // ✅ Sadece image files
+          if (stats.isFile() && /\.(jpg|jpeg|png|gif|webp)$/i.test(file)) {
+            const fileExtension = path.extname(file);
+            const originalName = file.replace(/-\d+/, ''); // Remove timestamp
             
-            if (fileStats.isFile() && /\.(jpg|jpeg|png|gif|webp)$/i.test(file)) {
-              images.push({
-                id: `${category}-${file}`,
-                url: `/uploads/${category}/${file}`,
-                originalName: file,
-                size: fileStats.size,
-                category,
-                uploadedAt: fileStats.birthtime.toISOString(),
-                modifiedAt: fileStats.mtime.toISOString(),
-                type: `image/${path.extname(file).substring(1).toLowerCase()}`,
-                alt: '' // Will be filled from database if available
-              });
-            }
+            images.push({
+              id: `${dirType}-${file}`,
+              url: `/uploads/${dirType}/${file}`,
+              originalName: originalName,
+              fileName: file,
+              type: dirType,
+              size: stats.size,
+              uploadedAt: stats.birthtime || stats.mtime,
+              mimeType: getMimeType(fileExtension)
+            });
           }
         }
+      } catch (error) {
+        // Directory doesn't exist, skip
+        console.log(`Directory ${dirType} not found, skipping`);
       }
-    } catch (error) {
-      console.log('No uploads directory or empty:', error.message);
     }
 
-    // Sort by upload date (newest first)
-    images.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+    // ✅ Sort images
+    images.sort((a, b) => {
+      if (sortBy === 'date') {
+        const aDate = new Date(a.uploadedAt);
+        const bDate = new Date(b.uploadedAt);
+        return sortOrder === 'desc' ? bDate - aDate : aDate - bDate;
+      } else if (sortBy === 'name') {
+        return sortOrder === 'desc' 
+          ? b.originalName.localeCompare(a.originalName)
+          : a.originalName.localeCompare(b.originalName);
+      } else if (sortBy === 'size') {
+        return sortOrder === 'desc' ? b.size - a.size : a.size - b.size;
+      }
+      return 0;
+    });
 
-    // Filter by type if specified
-    let filteredImages = type === 'all' ? images : images.filter(img => img.category === type);
+    // ✅ Limit results
+    const limitedImages = images.slice(0, limit);
 
-    // Filter by search term
-    if (search) {
-      filteredImages = filteredImages.filter(img => 
-        img.originalName.toLowerCase().includes(search.toLowerCase()) ||
-        img.alt.toLowerCase().includes(search.toLowerCase())
-      );
-    }
-
-    // Pagination
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedImages = filteredImages.slice(startIndex, endIndex);
-
-    console.log(`✅ Found ${filteredImages.length} images, returning ${paginatedImages.length}`);
+    console.log(`✅ Found ${limitedImages.length} images (${images.length} total)`);
 
     return NextResponse.json({
       success: true,
-      images: paginatedImages,
-      pagination: {
-        currentPage: page,
-        totalPages: Math.ceil(filteredImages.length / limit),
-        totalCount: filteredImages.length,
-        hasNextPage: endIndex < filteredImages.length,
-        hasPrevPage: page > 1,
-        limit
-      },
-      categories: [...new Set(images.map(img => img.category))],
+      images: limitedImages,
+      total: images.length,
+      filtered: limitedImages.length,
       stats: {
-        totalImages: images.length,
         totalSize: images.reduce((sum, img) => sum + img.size, 0),
-        byCategory: images.reduce((acc, img) => {
-          acc[img.category] = (acc[img.category] || 0) + 1;
-          return acc;
-        }, {})
+        types: scanDirectories,
+        lastUpload: images.length > 0 ? images[0].uploadedAt : null
       }
     });
 
@@ -106,13 +104,13 @@ export async function GET(request) {
     console.error('❌ Media gallery error:', error);
     return NextResponse.json({
       success: false,
-      message: 'Medya galerisi yüklenirken hata oluştu',
+      message: 'Medya galerisi yüklenemedi',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     }, { status: 500 });
   }
 }
 
-// DELETE - Bulk delete media files
+// ✅ DELETE - Bulk image deletion
 export async function DELETE(request) {
   try {
     const session = await getServerSession(request);
@@ -120,67 +118,92 @@ export async function DELETE(request) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
+    // Yetki kontrolü
+    if (!(await hasPermission(session.user, 'content', 'delete'))) {
+      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
+    }
+
     const { imageIds } = await request.json();
     
     if (!Array.isArray(imageIds) || imageIds.length === 0) {
       return NextResponse.json({ 
         success: false, 
-        message: 'Geçersiz dosya ID\'leri' 
+        message: 'Silinecek görsel seçilmedi' 
       }, { status: 400 });
     }
 
-    console.log(`🗑️ Bulk deleting ${imageIds.length} files`);
+    console.log(`🗑️ Bulk delete request from ${session.user.name}: ${imageIds.length} images`);
 
     const results = [];
-    
-    for (const id of imageIds) {
-      try {
-        // Parse ID to get category and filename
-        const [category, ...filenameParts] = id.split('-');
-        const filename = filenameParts.join('-');
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
 
-        if (!category || !filename) {
-          results.push({ id, success: false, error: 'Geçersiz ID formatı' });
-          continue;
+    for (const imageId of imageIds) {
+      try {
+        // Parse image ID: "type-filename"
+        const [type, ...filenameParts] = imageId.split('-');
+        const filename = filenameParts.join('-');
+        
+        const filePath = path.join(uploadsDir, type, filename);
+        
+        // ✅ Security check - ensure file is within uploads directory
+        const resolvedPath = path.resolve(filePath);
+        const uploadsPath = path.resolve(uploadsDir);
+        
+        if (!resolvedPath.startsWith(uploadsPath)) {
+          throw new Error('Invalid file path');
         }
 
-        const filePath = path.join(process.cwd(), 'public', 'uploads', category, filename);
-        
         await unlink(filePath);
-        results.push({ id, success: true });
+        
+        results.push({
+          id: imageId,
+          success: true
+        });
+        
+        console.log(`✅ Deleted: ${filename}`);
         
       } catch (error) {
-        console.error(`Delete error for ${id}:`, error);
-        results.push({ 
-          id, 
-          success: false, 
-          error: error.code === 'ENOENT' ? 'Dosya bulunamadı' : 'Silme hatası' 
+        console.error(`❌ Failed to delete ${imageId}:`, error.message);
+        
+        results.push({
+          id: imageId,
+          success: false,
+          error: error.message
         });
       }
     }
 
-    const successCount = results.filter(r => r.success).length;
-    const failCount = results.length - successCount;
-
-    console.log(`✅ Bulk delete completed: ${successCount} success, ${failCount} failed`);
+    const successful = results.filter(r => r.success).length;
+    const failed = results.filter(r => !r.success).length;
 
     return NextResponse.json({
-      success: true,
-      message: `${successCount} dosya silindi, ${failCount} hata`,
+      success: failed === 0,
+      message: failed === 0 
+        ? `${successful} görsel başarıyla silindi`
+        : `${successful} görsel silindi, ${failed} görsel silinemedi`,
       results,
-      summary: {
-        total: results.length,
-        success: successCount,
-        failed: failCount
-      }
+      stats: { successful, failed, total: imageIds.length }
     });
 
   } catch (error) {
     console.error('❌ Bulk delete error:', error);
     return NextResponse.json({
       success: false,
-      message: 'Toplu silme işleminde hata oluştu',
+      message: 'Toplu silme işlemi başarısız',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     }, { status: 500 });
   }
+}
+
+// ✅ Helper function - MIME type detection
+function getMimeType(extension) {
+  const mimeTypes = {
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg', 
+    '.png': 'image/png',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp'
+  };
+  
+  return mimeTypes[extension.toLowerCase()] || 'image/jpeg';
 }

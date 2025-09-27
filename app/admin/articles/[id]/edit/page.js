@@ -1,447 +1,381 @@
-// app/admin/articles/[id]/edit/page.js - ULTRA PROFESSIONAL ENTERPRISE LEVEL
+// app/admin/articles/[id]/edit/page.js - GÖRSEL ENTEGRASYON FİXED!
 'use client';
 
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { 
-  Save, Send, Eye, ArrowLeft, CheckCircle, AlertTriangle, Clock, 
-  Zap, Target, TrendingUp, BarChart3, FileText, Settings, Globe,
-  Sparkles, Brain, Layers, Hash, Tag, Calendar, Users, Shield,
-  RefreshCw, BookOpen, PenTool, Palette, Image as ImageIcon,
-  Video, Mic, Link2, Code, Table, Type, AlignLeft, AlignCenter,
-  AlignRight, List, ListOrdered, Quote, Bold, Italic, Underline,
-  Strikethrough, Subscript, Superscript, Minus, Plus, X, Maximize,
-  Minimize, Copy, Download, Upload, Search, Filter, SortAsc,
-  History, GitBranch, ExternalLink, Archive, Trash2, MoreHorizontal,
-  Activity, MessageSquare, Share, Bookmark
+  Save, Send, Eye, Clock, Calendar, Tag, Image as ImageIcon,
+  FileText, Settings, Zap, ArrowLeft, CheckCircle, AlertTriangle,
+  Info, Globe, Hash, Type, X, Upload, Loader2, Trash2, Archive
 } from 'lucide-react';
 
-import ModernArticleEditor from '@/components/admin/articles/ModernArticleEditor';
+import UltraProfessionalEditor from '@/components/admin/articles/UltraProfessionalEditor';
 import ImageUploadModal from '@/components/admin/ImageUploadModal';
 
-// Advanced Template Configurations (same as create)
-const ARTICLE_TEMPLATES = {
-  'standard': {
-    name: 'Standart Makale',
-    description: 'Genel blog yazıları için',
-    icon: FileText,
-    color: 'from-gray-500 to-gray-600',
-    defaultSEO: { focusKeywordDensity: 1.5, minWordCount: 800, maxTitleLength: 60 }
-  },
-  'legal-article': {
-    name: 'Hukuki Makale',
-    description: 'Detaylı hukuki analizler',
-    icon: Shield,
-    color: 'from-blue-600 to-indigo-600',
-    defaultSEO: { focusKeywordDensity: 2.0, minWordCount: 1200, maxTitleLength: 65 }
-  },
-  'case-study': {
-    name: 'Vaka Çalışması',
-    description: 'Gerçek dava örnekleri',
-    icon: BookOpen,
-    color: 'from-green-600 to-emerald-600',
-    defaultSEO: { focusKeywordDensity: 1.8, minWordCount: 1000, maxTitleLength: 70 }
-  },
-  'legal-guide': {
-    name: 'Hukuki Rehber',
-    description: 'Adım adım kılavuzlar',
-    icon: Target,
-    color: 'from-purple-600 to-violet-600',
-    defaultSEO: { focusKeywordDensity: 2.2, minWordCount: 1500, maxTitleLength: 55 }
-  },
-  'news': {
-    name: 'Hukuk Haberi',
-    description: 'Güncel gelişmeler',
-    icon: Zap,
-    color: 'from-orange-500 to-red-500',
-    defaultSEO: { focusKeywordDensity: 1.2, minWordCount: 400, maxTitleLength: 50 }
-  }
-};
-
-// Categories (same as create)
-const CATEGORIES = [
-  { value: 'genel', label: 'Genel', color: 'bg-gray-100 text-gray-800', icon: Globe },
-  { value: 'aile-hukuku', label: 'Aile Hukuku', color: 'bg-pink-100 text-pink-800', icon: Users },
-  { value: 'ceza-hukuku', label: 'Ceza Hukuku', color: 'bg-red-100 text-red-800', icon: Shield },
-  { value: 'is-hukuku', label: 'İş Hukuku', color: 'bg-blue-100 text-blue-800', icon: FileText },
-  { value: 'ticaret-hukuku', label: 'Ticaret Hukuku', color: 'bg-green-100 text-green-800', icon: TrendingUp },
-  { value: 'idare-hukuku', label: 'İdare Hukuku', color: 'bg-purple-100 text-purple-800', icon: Settings },
-  { value: 'icra-hukuku', label: 'İcra Hukuku', color: 'bg-orange-100 text-orange-800', icon: Zap },
-  { value: 'gayrimenkul-hukuku', label: 'Gayrimenkul Hukuku', color: 'bg-yellow-100 text-yellow-800', icon: Target },
-  { value: 'miras-hukuku', label: 'Miras Hukuku', color: 'bg-indigo-100 text-indigo-800', icon: Users },
-  { value: 'kvkk', label: 'KVKK', color: 'bg-cyan-100 text-cyan-800', icon: Shield },
-  { value: 'sigorta-hukuku', label: 'Sigorta Hukuku', color: 'bg-teal-100 text-teal-800', icon: FileText }
-];
-
-// Content Quality Metrics (same calculation logic)
-const CONTENT_METRICS = {
-  readability: {
-    name: 'Okunabilirlik',
-    icon: Eye,
-    calculate: (content) => {
-      const text = content.replace(/<[^>]*>/g, '');
-      const words = text.split(/\s+/).filter(w => w.length > 0);
-      const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-      if (sentences.length === 0) return 0;
-      const avgWordsPerSentence = words.length / sentences.length;
-      const avgCharsPerWord = words.join('').length / words.length;
-      let score = 100 - (avgWordsPerSentence * 1.5) - (avgCharsPerWord * 2);
-      return Math.max(0, Math.min(100, Math.round(score)));
-    }
-  },
-  engagement: {
-    name: 'Etkileşim Potansiyeli',
-    icon: TrendingUp,
-    calculate: (content, title) => {
-      const text = content.replace(/<[^>]*>/g, '');
-      const words = text.split(/\s+/).filter(w => w.length > 0);
-      let score = 0;
-      if (words.length >= 800) score += 30;
-      else if (words.length >= 400) score += 20;
-      else if (words.length >= 200) score += 10;
-      const questions = (text.match(/\?/g) || []).length;
-      score += Math.min(questions * 5, 20);
-      if (title.includes('nasıl') || title.includes('neden')) score += 15;
-      return Math.min(100, Math.round(score));
-    }
-  },
-  seoStrength: {
-    name: 'SEO Gücü',
-    icon: Target,
-    calculate: (content, title, metaDesc, focusKeyword) => {
-      let score = 0;
-      if (title.length >= 30 && title.length <= 60) score += 20;
-      if (title.toLowerCase().includes(focusKeyword.toLowerCase())) score += 15;
-      if (metaDesc.length >= 120 && metaDesc.length <= 160) score += 15;
-      return Math.min(100, Math.round(score));
-    }
-  }
-};
-
-// Advanced Auto-Save Hook (same as create)
-const useAutoSave = (data, onSave, interval = 30000) => {
-  const [lastSaved, setLastSaved] = useState(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
-  const timeoutRef = useRef(null);
-  const lastDataRef = useRef(null);
-
-  const saveData = useCallback(async () => {
-    if (!hasChanges || isSaving) return;
-    setIsSaving(true);
-    try {
-      await onSave(data);
-      setLastSaved(new Date());
-      setHasChanges(false);
-    } catch (error) {
-      console.error('Auto-save failed:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  }, [data, hasChanges, isSaving, onSave]);
-
-  useEffect(() => {
-    if (JSON.stringify(data) !== JSON.stringify(lastDataRef.current)) {
-      setHasChanges(true);
-      lastDataRef.current = data;
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(saveData, interval);
-    }
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, [data, saveData, interval]);
-
-  return { lastSaved, isSaving, hasChanges };
-};
-
-// Main Edit Component
-export default function UltraProfessionalEditPage() {
+const UltraProfessionalArticleEdit = () => {
   const router = useRouter();
   const params = useParams();
   const articleId = params.id;
-
-  // Core State
+  
+  // ✅ Core State
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [articleData, setArticleData] = useState({});
+  const [articleData, setArticleData] = useState({
+    title: '',
+    slug: '',
+    excerpt: '',
+    content: '',
+    metaTitle: '',
+    metaDescription: '',
+    focusKeyword: '',
+    keywords: [],
+    tags: [],
+    category: 'genel',
+    status: 'draft',
+    allowComments: true,
+    scheduledAt: '',
+    featuredImage: '',
+    featuredImageAlt: '',
+    template: 'standard'
+  });
 
-  // UI State
-  const [activeWorkspace, setActiveWorkspace] = useState('editor');
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [showVersions, setShowVersions] = useState(false);
-  const [showAnalytics, setShowAnalytics] = useState(false);
+  // ✅ UI State
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
-  const [imageModalType, setImageModalType] = useState('featured');
-  const [notifications, setNotifications] = useState([]);
+  const [imageModalType, setImageModalType] = useState('content');
+  const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [isArchiving, setIsArchiving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [hasChanges, setHasChanges] = useState(false);
 
-  // Advanced Features State
-  const [contentAnalysis, setContentAnalysis] = useState(null);
-  const [performanceMetrics, setPerformanceMetrics] = useState(null);
-  const [editHistory, setEditHistory] = useState([]);
-  const [comments, setComments] = useState([]);
+  // ✅ Refs
+  const editorRef = useRef(null);
+  const originalDataRef = useRef(null);
 
-  // Load article data
+  // ✅ Categories
+  const categories = [
+    { value: 'genel', label: 'Genel', color: 'bg-gray-100 text-gray-800' },
+    { value: 'aile-hukuku', label: 'Aile Hukuku', color: 'bg-pink-100 text-pink-800' },
+    { value: 'ceza-hukuku', label: 'Ceza Hukuku', color: 'bg-red-100 text-red-800' },
+    { value: 'is-hukuku', label: 'İş Hukuku', color: 'bg-blue-100 text-blue-800' },
+    { value: 'ticaret-hukuku', label: 'Ticaret Hukuku', color: 'bg-green-100 text-green-800' },
+    { value: 'idare-hukuku', label: 'İdare Hukuku', color: 'bg-purple-100 text-purple-800' },
+    { value: 'icra-hukuku', label: 'İcra Hukuku', color: 'bg-orange-100 text-orange-800' },
+    { value: 'gayrimenkul-hukuku', label: 'Gayrimenkul Hukuku', color: 'bg-yellow-100 text-yellow-800' },
+    { value: 'miras-hukuku', label: 'Miras Hukuku', color: 'bg-indigo-100 text-indigo-800' },
+    { value: 'kvkk', label: 'KVKK', color: 'bg-cyan-100 text-cyan-800' }
+  ];
+
+  // ✅ Templates
+  const templates = [
+    { value: 'standard', label: 'Standart Makale', description: 'Genel makale formatı' },
+    { value: 'legal-article', label: 'Hukuki Makale', description: 'Hukuki analiz ve değerlendirme' },
+    { value: 'case-study', label: 'Vaka Analizi', description: 'Dava örnekleri ve sonuçları' },
+    { value: 'legal-guide', label: 'Hukuk Rehberi', description: 'Adım adım hukuki süreç rehberi' },
+    { value: 'news', label: 'Hukuk Haberi', description: 'Güncel hukuki gelişmeler' }
+  ];
+
+  // ✅ Load article data
   useEffect(() => {
-    const fetchArticle = async () => {
-      if (!articleId) return;
-
-      setLoading(true);
+    const loadArticle = async () => {
       try {
-        const [articleResponse, analyticsResponse, historyResponse] = await Promise.all([
-          fetch(`/api/admin/articles/${articleId}`, { credentials: 'include' }),
-          fetch(`/api/admin/articles/${articleId}/analytics`, { credentials: 'include' }).catch(() => null),
-          fetch(`/api/admin/articles/${articleId}/history`, { credentials: 'include' }).catch(() => null)
-        ]);
+        setLoading(true);
+        const response = await fetch(`/api/admin/articles/${articleId}`, {
+          credentials: 'include'
+        });
 
-        if (!articleResponse.ok) {
-          throw new Error(`Article not found: ${articleResponse.status}`);
-        }
+        if (response.ok) {
+          const result = await response.json();
+          if (result.article) {
+            const article = result.article;
+            
+            // Normalize data
+            const normalizedData = {
+              title: article.title || '',
+              slug: article.slug || '',
+              excerpt: article.excerpt || '',
+              content: article.content || '',
+              metaTitle: article.metaTitle || article.title || '',
+              metaDescription: article.metaDescription || article.excerpt || '',
+              focusKeyword: article.focusKeyword || '',
+              keywords: Array.isArray(article.keywords) ? article.keywords : [],
+              tags: Array.isArray(article.tags) ? article.tags : [],
+              category: article.category || 'genel',
+              status: article.status || 'draft',
+              allowComments: article.allowComments !== false,
+              scheduledAt: article.scheduledAt || '',
+              featuredImage: article.featuredImage || '',
+              featuredImageAlt: article.featuredImageAlt || '',
+              template: article.template || 'standard'
+            };
 
-        const articleResult = await articleResponse.json();
-        
-        if (articleResult.success) {
-          setArticle(articleResult.article);
-          setArticleData({
-            title: articleResult.article.title || '',
-            slug: articleResult.article.slug || '',
-            excerpt: articleResult.article.excerpt || '',
-            content: articleResult.article.content || '',
-            metaTitle: articleResult.article.metaTitle || '',
-            metaDescription: articleResult.article.metaDescription || '',
-            focusKeyword: articleResult.article.focusKeyword || '',
-            keywords: articleResult.article.keywords || [],
-            tags: articleResult.article.tags || [],
-            category: articleResult.article.category || 'genel',
-            template: articleResult.article.template || 'standard',
-            status: articleResult.article.status || 'draft',
-            allowComments: articleResult.article.allowComments !== false,
-            scheduledAt: articleResult.article.scheduledAt || '',
-            featuredImage: articleResult.article.featuredImage || '',
-            socialTitle: articleResult.article.socialTitle || '',
-            socialDescription: articleResult.article.socialDescription || '',
-            socialImage: articleResult.article.socialImage || ''
-          });
-
-          // Load analytics if available
-          if (analyticsResponse && analyticsResponse.ok) {
-            const analytics = await analyticsResponse.json();
-            if (analytics.success) {
-              setPerformanceMetrics(analytics.metrics);
-            }
+            setArticle(article);
+            setArticleData(normalizedData);
+            originalDataRef.current = normalizedData;
+            
+            console.log('✅ Article loaded:', article.title);
           }
-
-          // Load edit history if available
-          if (historyResponse && historyResponse.ok) {
-            const history = await historyResponse.json();
-            if (history.success) {
-              setEditHistory(history.history || []);
-            }
-          }
-
+        } else if (response.status === 404) {
+          setError('Makale bulunamadı');
+          router.push('/admin/articles');
         } else {
-          throw new Error(articleResult.message || 'Failed to load article');
+          setError('Makale yüklenirken hata oluştu');
         }
       } catch (error) {
-        console.error('Fetch error:', error);
-        setError(error.message);
+        console.error('Load article error:', error);
+        setError('Sunucu hatası oluştu');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchArticle();
-  }, [articleId]);
-
-  // Auto-save
-  const autoSave = useAutoSave(articleData, async (data) => {
-    if (data.title && data.content && data.content.length > 50) {
-      await fetch(`/api/admin/articles/${articleId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ ...data, status: data.status || 'draft' })
-      });
+    if (articleId) {
+      loadArticle();
     }
-  });
+  }, [articleId, router]);
 
-  // Current template and category
-  const currentTemplate = ARTICLE_TEMPLATES[articleData.template] || ARTICLE_TEMPLATES.standard;
-  const currentCategory = CATEGORIES.find(cat => cat.value === articleData.category) || CATEGORIES[0];
-
-  // Content Metrics
-  const contentMetrics = useMemo(() => {
-    const metrics = {};
-    Object.entries(CONTENT_METRICS).forEach(([key, metric]) => {
-      metrics[key] = metric.calculate(
-        articleData.content || '', 
-        articleData.title || '',
-        articleData.metaDescription || '',
-        articleData.focusKeyword || ''
-      );
-    });
-    return metrics;
+  // ✅ Track changes
+  useEffect(() => {
+    if (originalDataRef.current) {
+      const hasChanged = JSON.stringify(articleData) !== JSON.stringify(originalDataRef.current);
+      setHasChanges(hasChanged);
+    }
   }, [articleData]);
 
-  // Word count and reading time
-  const wordCount = useMemo(() => {
-    return (articleData.content || '').replace(/<[^>]*>/g, '').split(/\s+/).filter(w => w.length > 0).length;
-  }, [articleData.content]);
-
-  const readingTime = useMemo(() => Math.ceil(wordCount / 200), [wordCount]);
-
-  // Input handler
+  // ✅ Input change handler
   const handleInputChange = useCallback((field, value) => {
     setArticleData(prev => ({ ...prev, [field]: value }));
+    setError(''); // Clear errors on change
   }, []);
 
-  // Notification system
-  const addNotification = useCallback((notification) => {
-    const id = Date.now().toString();
-    const newNotification = { id, ...notification };
-    setNotifications(prev => [...prev, newNotification]);
+  // ✅ Content change handler
+  const handleContentChange = useCallback((content) => {
+    console.log('📝 Content changed in editor:', content.length, 'characters');
+    setArticleData(prev => ({ ...prev, content }));
+  }, []);
 
-    if (notification.duration) {
-      setTimeout(() => {
-        setNotifications(prev => prev.filter(n => n.id !== id));
-      }, notification.duration);
+  // ✅ KRİTİK: Image selection handler
+  const handleImageSelect = useCallback((imageUrl, altText = '') => {
+    console.log('🖼️ Image selected:', { imageUrl, altText, type: imageModalType });
+    
+    if (imageModalType === 'featured') {
+      // ✅ Featured image set et
+      setArticleData(prev => ({
+        ...prev, 
+        featuredImage: imageUrl,
+        featuredImageAlt: altText
+      }));
+      console.log('✅ Featured image updated:', imageUrl);
+      
+    } else if (imageModalType === 'content') {
+      // ✅ Editöre görsel ekle
+      if (editorRef.current && editorRef.current.insertImageToEditor) {
+        editorRef.current.insertImageToEditor(imageUrl, altText);
+        console.log('✅ Image inserted to editor:', imageUrl);
+      } else {
+        // Fallback
+        const imgHtml = `
+          <figure class="my-4 text-center">
+            <img src="${imageUrl}" alt="${altText}" class="max-w-full h-auto rounded-lg shadow-sm mx-auto" style="max-width: 100%; height: auto;" />
+            ${altText ? `<figcaption class="text-sm text-gray-600 mt-2">${altText}</figcaption>` : ''}
+          </figure>
+        `;
+        
+        setArticleData(prev => ({
+          ...prev,
+          content: prev.content + imgHtml
+        }));
+        console.log('✅ Image added to content (fallback)');
+      }
     }
+    
+    setIsImageModalOpen(false);
+  }, [imageModalType]);
+
+  // ✅ Image modal handlers
+  const openImageModalForContent = useCallback(() => {
+    setImageModalType('content');
+    setIsImageModalOpen(true);
   }, []);
 
-  const removeNotification = useCallback((id) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+  const openImageModalForFeatured = useCallback(() => {
+    setImageModalType('featured');
+    setIsImageModalOpen(true);
   }, []);
 
-  // Save handlers
-  const handleSave = useCallback(async (status) => {
+  // ✅ Auto-save implementation - OPTIMIZED
+  const autoSave = useCallback(async (data) => {
+    if (!data.title.trim() || !hasChanges) return;
+    
     try {
+      const response = await fetch(`/api/admin/articles/${articleId}/auto-save`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          title: data.title,
+          content: data.content,
+          excerpt: data.excerpt
+        })
+      });
+
+      if (response.ok) {
+        setLastSaved(new Date());
+        console.log('💾 Auto-saved successfully');
+      }
+    } catch (error) {
+      console.log('Auto-save failed (non-critical):', error);
+    }
+  }, [articleId, hasChanges]);
+
+  // ✅ Auto-save effect - Every 30 seconds
+  useEffect(() => {
+    if (!loading && hasChanges) {
+      const timer = setTimeout(() => {
+        autoSave(articleData);
+      }, 30000); // 30 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [articleData, autoSave, loading, hasChanges]);
+
+  // ✅ Save handlers
+  const handleSave = useCallback(async (status = null) => {
+    setIsSaving(true);
+    setError('');
+    
+    try {
+      const dataToSave = {
+        ...articleData,
+        status: status || articleData.status,
+        keywords: typeof articleData.keywords === 'string' 
+          ? articleData.keywords.split(',').map(k => k.trim()).filter(Boolean)
+          : articleData.keywords,
+        tags: typeof articleData.tags === 'string'
+          ? articleData.tags.split(',').map(t => t.trim()).filter(Boolean)
+          : articleData.tags
+      };
+
       const response = await fetch(`/api/admin/articles/${articleId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ ...articleData, status: status || articleData.status })
+        body: JSON.stringify(dataToSave)
       });
 
       const result = await response.json();
 
-      if (result.success) {
-        setArticle(result.article);
-        addNotification({
-          type: 'success',
-          message: `Makale ${status === 'published' ? 'yayınlandı' : 'güncellendi'}!`,
-          duration: 3000
-        });
+      if (response.ok) {
+        setSuccess(status === 'published' ? 'Makale başarıyla yayınlandı!' : 'Makale başarıyla güncellendi!');
+        setLastSaved(new Date());
+        setHasChanges(false);
+        originalDataRef.current = { ...dataToSave };
+        
+        // Update article state
+        if (result.article) {
+          setArticle(result.article);
+        }
       } else {
-        throw new Error(result.message);
+        setError(result.message || 'Güncelleme hatası oluştu');
       }
     } catch (error) {
-      addNotification({
-        type: 'error',
-        message: error.message || 'İşlem başarısız',
-        duration: 5000
-      });
+      console.error('Save error:', error);
+      setError('Sunucu hatası oluştu');
+    } finally {
+      setIsSaving(false);
     }
-  }, [articleId, articleData, addNotification]);
+  }, [articleData, articleId]);
 
-  const handlePublish = useCallback(async () => {
+  const handlePublish = useCallback(() => {
     setIsPublishing(true);
-    try {
-      await handleSave('published');
-    } finally {
-      setIsPublishing(false);
-    }
+    handleSave('published').finally(() => setIsPublishing(false));
   }, [handleSave]);
 
-  const handleArchive = useCallback(async () => {
-    if (!confirm('Bu makaleyi arşivlemek istediğinize emin misiniz?')) return;
+  const handleUnpublish = useCallback(() => {
+    handleSave('draft');
+  }, [handleSave]);
+
+  // ✅ Delete handler
+  const handleDelete = useCallback(async () => {
+    if (!confirm('Bu makaleyi kalıcı olarak silmek istediğinizden emin misiniz?')) {
+      return;
+    }
+
+    setIsDeleting(true);
     
-    setIsArchiving(true);
     try {
-      await handleSave('archived');
+      const response = await fetch(`/api/admin/articles/${articleId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        router.push('/admin/articles?deleted=true');
+      } else {
+        const result = await response.json();
+        setError(result.message || 'Silme hatası oluştu');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      setError('Sunucu hatası oluştu');
     } finally {
-      setIsArchiving(false);
+      setIsDeleting(false);
     }
-  }, [handleSave]);
+  }, [articleId, router]);
 
-  // Content analysis
+  // ✅ Keyboard shortcuts
   useEffect(() => {
-    if (articleData.content && articleData.title) {
-      const analysis = {
-        metrics: contentMetrics,
-        recommendations: [],
-        score: Math.round(Object.values(contentMetrics).reduce((a, b) => a + b, 0) / Object.keys(contentMetrics).length)
-      };
-
-      // Generate recommendations
-      if (contentMetrics.readability < 70) {
-        analysis.recommendations.push({
-          type: 'readability',
-          message: 'Cümlelerinizi kısaltmaya çalışın.',
-          priority: 'high'
-        });
-      }
-
-      if (contentMetrics.seoStrength < 70) {
-        analysis.recommendations.push({
-          type: 'seo',
-          message: 'SEO optimizasyonu geliştirilebilir.',
-          priority: 'medium'
-        });
-      }
-
-      setContentAnalysis(analysis);
-    }
-  }, [articleData, contentMetrics]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyboard = (e) => {
+    const handleKeyDown = (e) => {
       if (e.ctrlKey || e.metaKey) {
-        switch (e.key) {
-          case 's':
-            e.preventDefault();
-            handleSave();
-            break;
-          case 'Enter':
-            e.preventDefault();
-            handlePublish();
-            break;
+        if (e.key === 's') {
+          e.preventDefault();
+          handleSave();
         }
       }
     };
 
-    window.addEventListener('keydown', handleKeyboard);
-    return () => window.removeEventListener('keydown', handleKeyboard);
-  }, [handleSave, handlePublish]);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleSave]);
+
+  // ✅ Unsaved changes warning
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasChanges]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <RefreshCw className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Makale Yükleniyor</h2>
-          <p className="text-gray-600">Lütfen bekleyin...</p>
+          <Loader2 className="w-8 h-8 text-blue-600 mx-auto mb-4 animate-spin" />
+          <p className="text-gray-600">Makale yükleniyor...</p>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (!article) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Makale Yüklenemedi</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Makale Bulunamadı</h2>
+          <p className="text-gray-600 mb-4">Aradığınız makale bulunamadı veya erişim yetkiniz yok.</p>
           <button
             onClick={() => router.push('/admin/articles')}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Makaleler Listesine Dön
+            Makalelere Dön
           </button>
         </div>
       </div>
@@ -449,469 +383,426 @@ export default function UltraProfessionalEditPage() {
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
-      {/* Ultra Professional Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
+    <div className="min-h-screen bg-gray-50">
+      
+      {/* HEADER */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-            <button
-              onClick={() => router.push('/admin/articles')}
-              className="hover:text-blue-600 transition-colors"
-            >
-              Makaleler
-            </button>
-            <span>/</span>
-            <span className="text-gray-900">Düzenle</span>
-            <span>/</span>
-            <span className="text-gray-900 truncate max-w-md">
-              {article?.title}
-            </span>
-          </div>
-
           <div className="flex items-center justify-between">
-            {/* Left Section */}
-            <div className="flex items-center gap-6">
+            
+            {/* Left - Back & Title */}
+            <div className="flex items-center gap-4">
               <button
-                onClick={() => router.back()}
-                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                onClick={() => {
+                  if (hasChanges && !confirm('Kaydedilmemiş değişiklikler var. Çıkmak istediğinizden emin misiniz?')) {
+                    return;
+                  }
+                  router.push('/admin/articles');
+                }}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
+              
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">
+                  {articleData.title || 'Makale Düzenle'}
+                </h1>
+                <div className="flex items-center gap-4 text-sm text-gray-500">
+                  <span>Durum: 
+                    <span className={`ml-1 ${
+                      article.status === 'published' ? 'text-green-600' : 
+                      article.status === 'scheduled' ? 'text-blue-600' : 'text-yellow-600'
+                    }`}>
+                      {article.status === 'published' ? 'Yayında' : 
+                       article.status === 'scheduled' ? 'Zamanlanmış' : 'Taslak'}
+                    </span>
+                  </span>
+                  {lastSaved && (
+                    <span>Son kayıt: {lastSaved.toLocaleTimeString('tr-TR')}</span>
+                  )}
+                  {hasChanges && (
+                    <span className="text-orange-600">• Kaydedilmemiş değişiklikler</span>
+                  )}
+                </div>
+              </div>
+            </div>
 
-              <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${currentTemplate.color} flex items-center justify-center shadow-lg`}>
-                  <currentTemplate.icon className="w-6 h-6 text-white" />
+            {/* Right - Actions */}
+            <div className="flex items-center gap-3">
+              
+              {/* Preview Button */}
+              {article.status === 'published' && (
+                <a
+                  href={`/makaleler/${articleData.slug}`}
+                  target="_blank"
+                  className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+                >
+                  <Eye className="w-4 h-4" />
+                  Önizle
+                </a>
+              )}
+
+              {/* Delete Button */}
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 text-red-700 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                {isDeleting ? 'Siliniyor...' : 'Sil'}
+              </button>
+
+              {/* Save Button */}
+              <button
+                onClick={() => handleSave()}
+                disabled={isSaving || !hasChanges}
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                {isSaving ? 'Kaydediliyor...' : 'Kaydet'}
+              </button>
+
+              {/* Publish/Unpublish Button */}
+              {article.status === 'published' ? (
+                <button
+                  onClick={handleUnpublish}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center gap-2"
+                >
+                  <Archive className="w-4 h-4" />
+                  Yayından Kaldır
+                </button>
+              ) : (
+                <button
+                  onClick={handlePublish}
+                  disabled={isPublishing || !articleData.title.trim()}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isPublishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  {isPublishing ? 'Yayınlanıyor...' : 'Yayınla'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* NOTIFICATIONS */}
+      {error && (
+        <div className="max-w-7xl mx-auto px-6 pt-4">
+          <div className="bg-red-100 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
+            <span className="text-red-800">{error}</span>
+            <button onClick={() => setError('')} className="ml-auto text-red-600 hover:text-red-800">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {success && (
+        <div className="max-w-7xl mx-auto px-6 pt-4">
+          <div className="bg-green-100 border border-green-200 rounded-lg p-4 flex items-center gap-3">
+            <CheckCircle className="w-5 h-5 text-green-600" />
+            <span className="text-green-800">{success}</span>
+            <button onClick={() => setSuccess('')} className="ml-auto text-green-600 hover:text-green-800">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MAIN CONTENT - SAME AS CREATE PAGE */}
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* LEFT COLUMN - Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* Basic Info */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="space-y-4">
+                
+                {/* Title */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Makale Başlığı *
+                  </label>
+                  <input
+                    type="text"
+                    value={articleData.title}
+                    onChange={(e) => handleInputChange('title', e.target.value)}
+                    placeholder="Makale başlığınızı yazın..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg font-medium"
+                  />
                 </div>
 
+                {/* Slug */}
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-                    Makale Düzenle
-                    {/* Status Badge */}
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      article?.status === 'published' ? 'bg-green-100 text-green-800' :
-                      article?.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                      article?.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {article?.status === 'published' ? 'Yayında' :
-                       article?.status === 'draft' ? 'Taslak' :
-                       article?.status === 'scheduled' ? 'Zamanlanmış' : 'Arşiv'}
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    URL Slug
+                  </label>
+                  <div className="flex">
+                    <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                      /makaleler/
                     </span>
-                  </h1>
-                  <p className="text-sm text-gray-600 flex items-center gap-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${currentCategory.color}`}>
-                      {currentCategory.label}
-                    </span>
-                    <span>•</span>
-                    <span>{currentTemplate.name}</span>
-                    <span>•</span>
-                    <span>Son güncelleme: {new Date(article?.updatedAt).toLocaleDateString('tr-TR')}</span>
+                    <input
+                      type="text"
+                      value={articleData.slug}
+                      onChange={(e) => handleInputChange('slug', e.target.value)}
+                      placeholder="makale-url-slug"
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Excerpt */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Makale Özeti
+                  </label>
+                  <textarea
+                    value={articleData.excerpt}
+                    onChange={(e) => handleInputChange('excerpt', e.target.value)}
+                    placeholder="Makale özetini yazın..."
+                    rows="3"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {articleData.excerpt.length}/300 karakter
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Center - Smart Stats */}
-            <div className="hidden lg:flex items-center gap-6">
-              <div className="flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <Type className="w-4 h-4 text-gray-500" />
-                  <span className="font-medium">{wordCount.toLocaleString()}</span>
-                  <span className="text-gray-500">kelime</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-gray-500" />
-                  <span className="font-medium">{readingTime}</span>
-                  <span className="text-gray-500">dk okuma</span>
-                </div>
-                {performanceMetrics && (
-                  <div className="flex items-center gap-2">
-                    <Eye className="w-4 h-4 text-gray-500" />
-                    <span className="font-medium text-blue-600">{performanceMetrics.views || 0}</span>
-                    <span className="text-gray-500">görüntüleme</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <Target className="w-4 h-4 text-gray-500" />
-                  <span className="font-medium text-green-600">{contentAnalysis?.score || 0}</span>
-                  <span className="text-gray-500">puan</span>
-                </div>
+            {/* Editor */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Type className="w-5 h-5 text-blue-600" />
+                  İçerik Editörü
+                </h3>
               </div>
-
-              {/* Auto-save Status */}
-              <div className="flex items-center gap-2 text-sm">
-                {autoSave.isSaving ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
-                    <span className="text-blue-600">Kaydediliyor...</span>
-                  </>
-                ) : autoSave.lastSaved ? (
-                  <>
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-green-600">
-                      {autoSave.lastSaved.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </>
-                ) : autoSave.hasChanges ? (
-                  <>
-                    <AlertTriangle className="w-4 h-4 text-yellow-500" />
-                    <span className="text-yellow-600">Değişiklikler var</span>
-                  </>
-                ) : null}
-              </div>
-            </div>
-
-            {/* Right Actions */}
-            <div className="flex items-center gap-3">
-              {/* View Published Article */}
-              {article?.status === 'published' && (
-                <button
-                  onClick={() => window.open(`/makaleler/${article.slug}`, '_blank')}
-                  className="px-4 py-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Görüntüle
-                </button>
-              )}
-
-              <button
-                onClick={() => setShowPreview(!showPreview)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                <Eye className="w-4 h-4 mr-2" />
-                Önizle
-              </button>
-
-              <button
-                onClick={() => handleSave(articleData.status)}
-                disabled={autoSave.isSaving}
-                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                Güncelle
-              </button>
-
-              {article?.status !== 'published' ? (
-                <button
-                  onClick={handlePublish}
-                  disabled={isPublishing || !articleData.title || wordCount < 100}
-                  className="px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 shadow-lg"
-                >
-                  {isPublishing ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Yayınlanıyor...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 mr-2" />
-                      Yayınla
-                    </>
-                  )}
-                </button>
-              ) : (
-                <button
-                  onClick={handleArchive}
-                  disabled={isArchiving}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
-                >
-                  {isArchiving ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Arşivleniyor...
-                    </>
-                  ) : (
-                    <>
-                      <Archive className="w-4 h-4 mr-2" />
-                      Arşivle
-                    </>
-                  )}
-                </button>
-              )}
-
-              {/* More Actions Dropdown */}
-              <div className="relative">
-                <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
-                  <MoreHorizontal className="w-5 h-5" />
-                </button>
-              </div>
+              
+              {/* ✅ UltraProfessionalEditor with Image Integration */}
+              <UltraProfessionalEditor
+                ref={editorRef}
+                content={articleData.content}
+                onChange={handleContentChange}
+                onImageInsert={openImageModalForContent}
+                placeholder="Makale içeriğinizi buraya yazın..."
+                autoSave={true}
+                className="min-h-[500px]"
+              />
             </div>
           </div>
 
-          {/* Workspace Navigation */}
-          <div className="flex items-center justify-between mt-4">
-            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-              {[
-                { key: 'editor', label: 'Editör', icon: PenTool, shortcut: '⌘1' },
-                { key: 'seo', label: 'SEO', icon: Target, shortcut: '⌘2' },
-                { key: 'analytics', label: 'Analiz', icon: BarChart3, shortcut: '⌘3' },
-                { key: 'history', label: 'Geçmiş', icon: History, shortcut: '⌘4' },
-                { key: 'settings', label: 'Ayarlar', icon: Settings, shortcut: '⌘5' }
-              ].map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveWorkspace(tab.key)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    activeWorkspace === tab.key
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  <tab.icon className="w-4 h-4" />
-                  {tab.label}
-                  <span className="text-xs text-gray-400 ml-1">{tab.shortcut}</span>
-                </button>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setIsFullscreen(!isFullscreen)}
-                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Tam Ekran (F11)"
-              >
-                {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="flex h-[calc(100vh-180px)] overflow-hidden">
-        {/* Primary Editor Area */}
-        <div className="flex-1 flex">
-          <ModernArticleEditor
-            initialData={articleData}
-            onSave={handleSave}
-            onPublish={handlePublish}
-            onAutoSave={autoSave.saveData}
-            template={currentTemplate}
-            category={currentCategory}
-            activeWorkspace={activeWorkspace}
-            contentMetrics={contentMetrics}
-            recommendations={contentAnalysis?.recommendations || []}
-            isEdit={true}
-            originalArticle={article}
-          />
-        </div>
-
-        {/* Advanced Right Panel */}
-        <div className="w-80 bg-white border-l border-gray-200 flex flex-col">
-          {/* Panel Header */}
-          <div className="p-4 border-b border-gray-200 bg-gray-50">
-            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-              {activeWorkspace === 'analytics' ? (
-                <>
-                  <BarChart3 className="w-5 h-5 text-blue-500" />
-                  Performans Analizi
-                </>
-              ) : activeWorkspace === 'history' ? (
-                <>
-                  <History className="w-5 h-5 text-purple-500" />
-                  Düzenleme Geçmişi
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-5 h-5 text-purple-500" />
-                  İçerik Asistanı
-                </>
-              )}
-            </h3>
-          </div>
-
-          {/* Panel Content */}
-          {activeWorkspace === 'analytics' && performanceMetrics ? (
-            <div className="p-4 space-y-4">
-              {/* Performance Metrics */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 bg-blue-50 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-blue-600">{performanceMetrics.views || 0}</div>
-                  <div className="text-xs text-gray-600">Görüntüleme</div>
-                </div>
-                <div className="p-3 bg-green-50 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-green-600">{performanceMetrics.likes || 0}</div>
-                  <div className="text-xs text-gray-600">Beğeni</div>
-                </div>
-                <div className="p-3 bg-purple-50 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-purple-600">{performanceMetrics.shares || 0}</div>
-                  <div className="text-xs text-gray-600">Paylaşım</div>
-                </div>
-                <div className="p-3 bg-orange-50 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-orange-600">{performanceMetrics.comments || 0}</div>
-                  <div className="text-xs text-gray-600">Yorum</div>
-                </div>
-              </div>
-
-              {/* Traffic Sources */}
-              <div className="bg-white rounded-lg border p-4">
-                <h4 className="font-medium text-gray-900 mb-3">Trafik Kaynakları</h4>
-                <div className="space-y-2">
-                  {performanceMetrics.sources?.map((source, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">{source.name}</span>
-                      <span className="text-sm font-medium">{source.visits}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : activeWorkspace === 'history' ? (
-            <div className="p-4 space-y-4">
-              {/* Edit History */}
-              <div className="space-y-3">
-                {editHistory.length > 0 ? editHistory.map((edit, index) => (
-                  <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <GitBranch className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900">{edit.action}</div>
-                      <div className="text-xs text-gray-500">
-                        {edit.user} • {new Date(edit.createdAt).toLocaleString('tr-TR')}
-                      </div>
-                      {edit.changes && (
-                        <div className="text-xs text-gray-400 mt-1">
-                          {edit.changes.join(', ')}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )) : (
-                  <div className="text-center py-6 text-gray-500">
-                    <History className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                    <p className="text-sm">Henüz düzenleme geçmişi yok</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="p-4 space-y-4">
-              {/* Content Quality Score */}
-              <div className="text-center mb-4">
-                <div className={`text-4xl font-bold mb-2 ${
-                  contentAnalysis?.score >= 80 ? 'text-green-600' : 
-                  contentAnalysis?.score >= 60 ? 'text-yellow-600' : 'text-red-600'
-                }`}>
-                  {contentAnalysis?.score || 0}
-                </div>
-                <div className="text-sm text-gray-600">Genel Kalite Puanı</div>
-              </div>
-
-              {/* Metric Breakdown */}
-              <div className="space-y-3">
-                {Object.entries(CONTENT_METRICS).map(([key, metric]) => (
-                  <div key={key} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <metric.icon className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-700">{metric.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-12 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full ${
-                            contentMetrics[key] >= 80 ? 'bg-green-500' : 
-                            contentMetrics[key] >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                          }`}
-                          style={{ width: `${contentMetrics[key]}%` }}
-                        />
-                      </div>
-                      <span className="text-sm font-medium text-gray-900 w-8">
-                        {contentMetrics[key]}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Recommendations */}
-              {contentAnalysis?.recommendations?.length > 0 && (
-                <div className="border-t pt-4">
-                  <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                    <Brain className="w-4 h-4 text-blue-500" />
-                    İyileştirme Önerileri
-                  </h4>
-                  <div className="space-y-2">
-                    {contentAnalysis.recommendations.map((rec, index) => (
-                      <div key={index} className={`p-3 rounded-lg text-sm ${
-                        rec.priority === 'high' ? 'bg-red-50 border border-red-200' :
-                        rec.priority === 'medium' ? 'bg-yellow-50 border border-yellow-200' :
-                        'bg-blue-50 border border-blue-200'
-                      }`}>
-                        <div className="flex items-start gap-2">
-                          {rec.priority === 'high' && <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />}
-                          {rec.priority === 'medium' && <Clock className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />}
-                          {rec.priority === 'low' && <CheckCircle className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />}
-                          <span className={
-                            rec.priority === 'high' ? 'text-red-700' :
-                            rec.priority === 'medium' ? 'text-yellow-700' :
-                            'text-blue-700'
-                          }>
-                            {rec.message}
-                          </span>
-                        </div>
-                      </div>
+          {/* RIGHT COLUMN - Settings & Meta (SAME AS CREATE) */}
+          <div className="space-y-6">
+            
+            {/* Publishing Settings */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Settings className="w-5 h-5 text-purple-600" />
+                Ayarlar
+              </h3>
+              
+              <div className="space-y-4">
+                
+                {/* Category */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Kategori
+                  </label>
+                  <select
+                    value={articleData.category}
+                    onChange={(e) => handleInputChange('category', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    {categories.map(cat => (
+                      <option key={cat.value} value={cat.value}>{cat.label}</option>
                     ))}
+                  </select>
+                </div>
+
+                {/* Template */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Şablon
+                  </label>
+                  <select
+                    value={articleData.template}
+                    onChange={(e) => handleInputChange('template', e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    {templates.map(template => (
+                      <option key={template.value} value={template.value}>
+                        {template.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Comments */}
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="allowComments"
+                    checked={articleData.allowComments}
+                    onChange={(e) => handleInputChange('allowComments', e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <label htmlFor="allowComments" className="ml-2 text-sm text-gray-700">
+                    Yorumlara izin ver
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Featured Image - SAME AS CREATE */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <ImageIcon className="w-5 h-5 text-green-600" />
+                Öne Çıkan Görsel
+              </h3>
+              
+              {articleData.featuredImage ? (
+                <div className="space-y-4">
+                  <div className="relative">
+                    <img
+                      src={articleData.featuredImage}
+                      alt={articleData.featuredImageAlt || 'Öne çıkan görsel'}
+                      className="w-full h-48 object-cover rounded-lg"
+                    />
+                    <button
+                      onClick={() => setArticleData(prev => ({ ...prev, featuredImage: '', featuredImageAlt: '' }))}
+                      className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Alt Text
+                    </label>
+                    <input
+                      type="text"
+                      value={articleData.featuredImageAlt}
+                      onChange={(e) => handleInputChange('featuredImageAlt', e.target.value)}
+                      placeholder="Görsel açıklaması..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    />
                   </div>
                 </div>
+              ) : (
+                <button
+                  onClick={openImageModalForFeatured}
+                  className="w-full p-8 border-2 border-dashed border-gray-300 rounded-lg text-center hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                >
+                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-600 font-medium">Öne Çıkan Görsel Seç</p>
+                  <p className="text-sm text-gray-500">Tıklayarak görsel yükleyin</p>
+                </button>
               )}
             </div>
-          )}
+
+            {/* SEO Settings - SAME AS CREATE */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Globe className="w-5 h-5 text-blue-600" />
+                SEO Ayarları
+              </h3>
+              
+              <div className="space-y-4">
+                
+                {/* Meta Title */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    SEO Başlığı
+                  </label>
+                  <input
+                    type="text"
+                    value={articleData.metaTitle}
+                    onChange={(e) => handleInputChange('metaTitle', e.target.value)}
+                    placeholder="SEO başlığı..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">{articleData.metaTitle.length}/60</p>
+                </div>
+
+                {/* Meta Description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Meta Açıklama
+                  </label>
+                  <textarea
+                    value={articleData.metaDescription}
+                    onChange={(e) => handleInputChange('metaDescription', e.target.value)}
+                    placeholder="SEO açıklaması..."
+                    rows="3"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">{articleData.metaDescription.length}/160</p>
+                </div>
+
+                {/* Focus Keyword */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Odak Kelimesi
+                  </label>
+                  <input
+                    type="text"
+                    value={articleData.focusKeyword}
+                    onChange={(e) => handleInputChange('focusKeyword', e.target.value)}
+                    placeholder="ana anahtar kelime"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  />
+                </div>
+
+                {/* Keywords */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Anahtar Kelimeler
+                  </label>
+                  <input
+                    type="text"
+                    value={Array.isArray(articleData.keywords) ? articleData.keywords.join(', ') : ''}
+                    onChange={(e) => handleInputChange('keywords', e.target.value.split(',').map(k => k.trim()).filter(Boolean))}
+                    placeholder="kelime1, kelime2, kelime3"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  />
+                </div>
+
+                {/* Tags */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Etiketler
+                  </label>
+                  <input
+                    type="text"
+                    value={Array.isArray(articleData.tags) ? articleData.tags.join(', ') : ''}
+                    onChange={(e) => handleInputChange('tags', e.target.value.split(',').map(t => t.trim()).filter(Boolean))}
+                    placeholder="etiket1, etiket2, etiket3"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Notifications */}
-      <div className="fixed top-20 right-6 z-50 space-y-2 max-w-sm">
-        {notifications.map((notification) => (
-          <div
-            key={notification.id}
-            className={`p-4 rounded-lg shadow-lg border-l-4 bg-white ${
-              notification.type === 'success' ? 'border-green-500' :
-              notification.type === 'error' ? 'border-red-500' :
-              notification.type === 'warning' ? 'border-yellow-500' :
-              'border-blue-500'
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              {notification.type === 'success' && <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />}
-              {notification.type === 'error' && <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />}
-              {notification.type === 'warning' && <AlertTriangle className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" />}
-              {notification.type === 'info' && <Sparkles className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />}
-              <div className="flex-1">
-                <p className={`text-sm font-medium ${
-                  notification.type === 'success' ? 'text-green-900' :
-                  notification.type === 'error' ? 'text-red-900' :
-                  notification.type === 'warning' ? 'text-yellow-900' :
-                  'text-blue-900'
-                }`}>
-                  {notification.message}
-                </p>
-              </div>
-              <button
-                onClick={() => removeNotification(notification.id)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Image Upload Modal */}
+      {/* ✅ IMAGE UPLOAD MODAL */}
       <ImageUploadModal
         isOpen={isImageModalOpen}
         onClose={() => setIsImageModalOpen(false)}
-        onImageSelect={(url, alt) => {
-          if (imageModalType === 'featured') {
-            handleInputChange('featuredImage', url);
-          } else if (imageModalType === 'social') {
-            handleInputChange('socialImage', url);
-          }
-          setIsImageModalOpen(false);
-        }}
+        onImageSelect={handleImageSelect}
+        type="articles"
+        allowMultiple={false}
       />
     </div>
   );
-}
+};
+
+export default UltraProfessionalArticleEdit;
