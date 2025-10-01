@@ -452,7 +452,7 @@ const ImageUploadModal = ({
             <div className="space-y-6">
               <div className="space-y-4">
                 <label className="block text-sm font-medium text-gray-700">
-                  Görsel URL'si
+                  Görsel URL&apos;si
                 </label>
                 <input
                   type="url"
